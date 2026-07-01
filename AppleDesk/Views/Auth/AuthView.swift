@@ -2,279 +2,220 @@ import SwiftUI
 
 struct AuthView: View {
     @EnvironmentObject var authVM: AuthViewModel
-    @State private var mode: AuthMode = .login
-    @State private var username = ""
     @State private var password = ""
+    @State private var setupUsername = ""
+    @State private var setupPassword = ""
     @State private var selectedColor: Color = .blue
     @State private var appear = false
+    @FocusState private var passwordFocused: Bool
 
     private let avatarColors: [Color] = [.blue, .purple, .pink, .orange, .green, .cyan, .indigo]
 
-    enum AuthMode: String, CaseIterable {
-        case login = "Accedi"
-        case register = "Registrati"
-    }
+    private var isSetup: Bool { !authVM.hasRegisteredAccount }
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                background
+        ZStack {
+            DesktopWallpaper()
+                .blur(radius: 28)
+                .overlay(Color.black.opacity(0.12))
 
-                HStack(spacing: 0) {
-                    brandingPanel
-                        .frame(width: max(geo.size.width * 0.42, 320))
+            VStack(spacing: 0) {
+                Spacer()
 
-                    Spacer(minLength: 24)
-
-                    authPanel
-                        .frame(maxWidth: 400)
-                        .padding(.trailing, max(48, geo.size.width * 0.08))
+                if isSetup {
+                    setupContent
+                        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                } else {
+                    signInContent
+                        .transition(.opacity.combined(with: .scale(scale: 0.98)))
                 }
-                .padding(.vertical, 48)
+
+                Spacer()
+
+                clockPanel
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 48)
+                    .padding(.bottom, 44)
             }
         }
         .ignoresSafeArea()
         .onAppear {
-            withAnimation(.spring(duration: 0.7, bounce: 0.12).delay(0.15)) { appear = true }
+            authVM.prepareAuthScreen()
+            selectedColor = authVM.avatarColor
+            withAnimation(.spring(duration: 0.65, bounce: 0.1).delay(0.1)) { appear = true }
+            if !isSetup {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { passwordFocused = true }
+            }
         }
     }
 
-    // MARK: - Background
+    // MARK: - Windows 11 sign-in (solo password)
 
-    private var background: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.08, green: 0.09, blue: 0.14),
-                    Color(red: 0.04, green: 0.05, blue: 0.09),
-                    Color(red: 0.06, green: 0.07, blue: 0.12)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+    private var signInContent: some View {
+        VStack(spacing: 20) {
+            userAvatar(size: 96, initial: userInitial, color: authVM.avatarColor)
 
-            Circle()
-                .fill(selectedColor.opacity(0.14))
-                .frame(width: 420, height: 420)
-                .blur(radius: 90)
-                .offset(x: -180, y: -120)
-
-            Circle()
-                .fill(Color.white.opacity(0.04))
-                .frame(width: 360, height: 360)
-                .blur(radius: 70)
-                .offset(x: 220, y: 200)
-        }
-        .ignoresSafeArea()
-    }
-
-    // MARK: - Left branding (Windows 11 / macOS lock screen)
-
-    private var brandingPanel: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer()
-
-            TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(ctx.date, format: .dateTime.hour().minute())
-                        .font(.system(size: 72, weight: .thin, design: .rounded))
-                        .foregroundStyle(.white)
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                    Text(ctx.date, format: .dateTime.weekday(.wide).day().month(.wide))
-                        .font(.system(size: 18, weight: .regular, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.55))
-                }
-            }
-            .padding(.leading, 56)
-
-            Spacer()
-
-            HStack(spacing: 10) {
-                Image(systemName: "laptopcomputer")
-                    .font(.system(size: 15, weight: .medium))
-                Text("AppleDesk")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-            }
-            .foregroundStyle(.white.opacity(0.4))
-            .padding(.leading, 56)
-            .padding(.bottom, 8)
-        }
-        .opacity(appear ? 1 : 0)
-        .offset(x: appear ? 0 : -24)
-    }
-
-    // MARK: - Right auth panel
-
-    private var authPanel: some View {
-        VStack(spacing: 28) {
-            avatarHeader
-
-            Picker("Modalità", selection: $mode) {
-                ForEach(AuthMode.allCases, id: \.self) { m in
-                    Text(m.rawValue).tag(m)
-                }
-            }
-            .pickerStyle(.segmented)
-            .onChange(of: mode) { _, _ in authVM.error = nil }
-
-            VStack(spacing: 14) {
-                AuthField(placeholder: "Nome utente", text: $username, icon: "person.fill")
-                AuthField(placeholder: "Password", text: $password, icon: "lock.fill", isSecure: true)
-            }
-
-            if mode == .register {
-                avatarColorPicker
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
-            if let err = authVM.error {
-                Text(err)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.red.opacity(0.9))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .transition(.opacity)
-            }
-
-            Button(action: submit) {
-                Text(mode == .login ? "Accedi" : "Crea account")
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(.white.opacity(0.14))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(.white.opacity(0.2), lineWidth: 0.5)
-                    )
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(36)
-        .background(.ultraThinMaterial)
-        .environment(\.colorScheme, .dark)
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [.white.opacity(0.22), .white.opacity(0.06)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.5
-                )
-        )
-        .shadow(color: .black.opacity(0.35), radius: 40, y: 20)
-        .scaleEffect(appear ? 1 : 0.96)
-        .opacity(appear ? 1 : 0)
-        .animation(.spring(duration: 0.45, bounce: 0.1), value: mode)
-    }
-
-    private var avatarHeader: some View {
-        VStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [selectedColor.opacity(0.55), selectedColor.opacity(0.25)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 76, height: 76)
-                Text(avatarInitial)
-                    .font(.system(size: 32, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
-            }
-            .animation(.spring(duration: 0.35, bounce: 0.2), value: username)
-
-            Text(mode == .login ? "Bentornato" : "Nuovo account")
-                .font(.system(size: 22, weight: .semibold, design: .rounded))
+            Text(authVM.username)
+                .font(.system(size: 22, weight: .regular, design: .rounded))
                 .foregroundStyle(.white)
-            Text("iPadOS 26 · AppleDesk")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.white.opacity(0.4))
-        }
-    }
 
-    private var avatarColorPicker: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Colore avatar")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.white.opacity(0.45))
-            HStack(spacing: 12) {
-                ForEach(avatarColors, id: \.self) { color in
-                    Circle()
-                        .fill(color)
-                        .frame(width: 28, height: 28)
-                        .overlay(
-                            Circle()
-                                .stroke(.white, lineWidth: selectedColor == color ? 2 : 0)
-                                .padding(-3)
-                        )
-                        .scaleEffect(selectedColor == color ? 1.12 : 1)
-                        .onTapGesture { withAnimation(.spring(duration: 0.3)) { selectedColor = color } }
+            VStack(spacing: 10) {
+                HStack(spacing: 12) {
+                    SecureField("Password", text: $password)
+                        .font(.system(size: 15, design: .rounded))
+                        .foregroundStyle(.white)
+                        .tint(.white)
+                        .focused($passwordFocused)
+                        .onSubmit { submitSignIn() }
+
+                    Button(action: submitSignIn) {
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 36, height: 36)
+                            .background(.white.opacity(password.isEmpty ? 0.12 : 0.22))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(password.isEmpty)
+                }
+                .padding(.horizontal, 4)
+                .padding(.vertical, 10)
+                .frame(width: 280)
+                .overlay(alignment: .bottom) {
+                    Rectangle().fill(.white.opacity(0.35)).frame(height: 1)
+                }
+
+                if let err = authVM.error {
+                    Text(err)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.red.opacity(0.9))
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .opacity(appear ? 1 : 0)
+        .offset(y: appear ? 0 : 12)
     }
 
-    private var avatarInitial: String {
-        let t = username.trimmingCharacters(in: .whitespaces)
-        guard let first = t.first else { return "?" }
-        return String(first).uppercased()
+    // MARK: - Prima configurazione (una tantum)
+
+    private var setupContent: some View {
+        VStack(spacing: 22) {
+            userAvatar(size: 80, initial: setupInitial, color: selectedColor)
+
+            Text("Configura AppleDesk")
+                .font(.system(size: 20, weight: .regular, design: .rounded))
+                .foregroundStyle(.white.opacity(0.9))
+
+            VStack(spacing: 16) {
+                setupField("Nome utente", text: $setupUsername, secure: false)
+                setupField("Password", text: $setupPassword, secure: true)
+
+                HStack(spacing: 10) {
+                    ForEach(avatarColors, id: \.self) { color in
+                        Circle()
+                            .fill(color)
+                            .frame(width: 24, height: 24)
+                            .overlay(
+                                Circle()
+                                    .stroke(.white, lineWidth: selectedColor == color ? 2 : 0)
+                                    .padding(-3)
+                            )
+                            .onTapGesture { selectedColor = color }
+                    }
+                }
+
+                if let err = authVM.error {
+                    Text(err)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.red.opacity(0.9))
+                }
+
+                Button(action: submitSetup) {
+                    Text("Continua")
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 28)
+                        .padding(.vertical, 10)
+                        .background(.white.opacity(0.16))
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(width: 300)
+        }
+        .opacity(appear ? 1 : 0)
+        .offset(y: appear ? 0 : 12)
     }
 
-    private func submit() {
-        withAnimation(.spring(duration: 0.35, bounce: 0.15)) {
-            switch mode {
-            case .login:
-                authVM.login(username: username, password: password)
-            case .register:
-                authVM.register(username: username, password: password, color: selectedColor)
+    // MARK: - Clock (bottom-left, Windows 11)
+
+    private var clockPanel: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { ctx in
+            VStack(alignment: .leading, spacing: 2) {
+                Text(ctx.date, format: .dateTime.hour().minute())
+                    .font(.system(size: 64, weight: .thin, design: .rounded))
+                    .foregroundStyle(.white)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                Text(ctx.date, format: .dateTime.weekday(.wide).day().month(.wide))
+                    .font(.system(size: 16, weight: .regular, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.55))
             }
         }
+        .opacity(appear ? 1 : 0)
     }
-}
 
-// MARK: - Auth field
+    // MARK: - Helpers
 
-private struct AuthField: View {
-    let placeholder: String
-    @Binding var text: String
-    let icon: String
-    var isSecure = false
+    private func userAvatar(size: CGFloat, initial: String, color: Color) -> some View {
+        ZStack {
+            Circle()
+                .fill(color.opacity(0.35))
+                .frame(width: size, height: size)
+            Text(initial)
+                .font(.system(size: size * 0.38, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white)
+        }
+    }
 
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.white.opacity(0.4))
-                .frame(width: 20)
-            if isSecure {
-                SecureField(placeholder, text: $text)
-                    .font(.system(size: 15, design: .rounded))
-                    .foregroundStyle(.white)
-                    .tint(.white)
+    private func setupField(_ placeholder: String, text: Binding<String>, secure: Bool) -> some View {
+        Group {
+            if secure {
+                SecureField(placeholder, text: text)
             } else {
-                TextField(placeholder, text: $text)
-                    .font(.system(size: 15, design: .rounded))
-                    .foregroundStyle(.white)
-                    .tint(.white)
+                TextField(placeholder, text: text)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(.white.opacity(0.1), lineWidth: 0.5)
-        )
+        .font(.system(size: 15, design: .rounded))
+        .foregroundStyle(.white)
+        .tint(.white)
+        .multilineTextAlignment(.center)
+        .padding(.vertical, 10)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(.white.opacity(0.25)).frame(height: 1)
+        }
+    }
+
+    private var userInitial: String {
+        guard let first = authVM.username.first else { return "?" }
+        return String(first).uppercased()
+    }
+
+    private var setupInitial: String {
+        let t = setupUsername.trimmingCharacters(in: .whitespaces)
+        guard let first = t.first else { return "?" }
+        return String(first).uppercased()
+    }
+
+    private func submitSignIn() {
+        authVM.login(password: password)
+        if authVM.error != nil { password = "" }
+    }
+
+    private func submitSetup() {
+        authVM.register(username: setupUsername, password: setupPassword, color: selectedColor)
     }
 }

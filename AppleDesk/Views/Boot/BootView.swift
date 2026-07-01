@@ -9,11 +9,8 @@ struct BootView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color(white: 0.04), Color(white: 0.08), Color(white: 0.04)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            DesktopWallpaper()
+                .overlay(Color.black.opacity(0.35))
 
             VStack(spacing: 32) {
                 Spacer()

@@ -13,49 +13,63 @@ class AuthViewModel: ObservableObject {
     private let colorKey    = "appledesk_avatarColor"
     private let loggedInKey = "appledesk_loggedIn"
 
+    /// Account già configurato sul dispositivo (username + password salvati).
+    var hasRegisteredAccount: Bool {
+        let user = UserDefaults.standard.string(forKey: usernameKey) ?? ""
+        let pass = UserDefaults.standard.string(forKey: passwordKey) ?? ""
+        return !user.isEmpty && !pass.isEmpty
+    }
+
+    func prepareAuthScreen() {
+        error = nil
+        if hasRegisteredAccount {
+            username = UserDefaults.standard.string(forKey: usernameKey) ?? ""
+            loadAvatarColor()
+        }
+    }
+
     // MARK: Boot → auth or desktop
     func finishBoot() {
         let isLoggedIn = UserDefaults.standard.bool(forKey: loggedInKey)
-        let savedUser = UserDefaults.standard.string(forKey: usernameKey) ?? ""
-        let savedPass = UserDefaults.standard.string(forKey: passwordKey) ?? ""
-        if isLoggedIn, !savedUser.isEmpty, !savedPass.isEmpty {
-            username = savedUser
+        if isLoggedIn, hasRegisteredAccount {
+            username = UserDefaults.standard.string(forKey: usernameKey) ?? ""
             loadAvatarColor()
             withAnimation { phase = .desktop }
         } else {
             UserDefaults.standard.set(false, forKey: loggedInKey)
+            prepareAuthScreen()
             withAnimation { phase = .auth }
         }
     }
 
-    // MARK: Register
+    // MARK: Register (solo prima configurazione)
     func register(username: String, password: String, color: Color) {
-        guard !username.trimmingCharacters(in: .whitespaces).isEmpty else {
-            error = "Inserisci un username"; return
-        }
-        guard password.count >= 4 else {
-            error = "Password minimo 4 caratteri"; return
-        }
-        UserDefaults.standard.set(username, forKey: usernameKey)
+        let name = username.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { error = "Scegli un nome utente"; return }
+        guard password.count >= 4 else { error = "Password minimo 4 caratteri"; return }
+
+        UserDefaults.standard.set(name, forKey: usernameKey)
         UserDefaults.standard.set(password, forKey: passwordKey)
-        UserDefaults.standard.set(true,     forKey: loggedInKey)
+        UserDefaults.standard.set(true, forKey: loggedInKey)
         saveColor(color)
-        self.username = username
+        self.username = name
         self.avatarColor = color
         error = nil
         withAnimation { phase = .desktop }
     }
 
-    // MARK: Login
-    func login(username: String, password: String) {
-        let savedUser = UserDefaults.standard.string(forKey: usernameKey) ?? ""
-        let savedPass = UserDefaults.standard.string(forKey: passwordKey) ?? ""
-        guard username == savedUser && password == savedPass else {
-            error = "Credenziali errate"; return
+    // MARK: Login (solo password, come Windows 11)
+    func login(password: String) {
+        guard hasRegisteredAccount else {
+            error = "Nessun account configurato"; return
         }
-        UserDefaults.standard.set(true, forKey: loggedInKey)
-        self.username = username
+        let savedPass = UserDefaults.standard.string(forKey: passwordKey) ?? ""
+        guard password == savedPass else {
+            error = "Password errata"; return
+        }
+        username = UserDefaults.standard.string(forKey: usernameKey) ?? ""
         loadAvatarColor()
+        UserDefaults.standard.set(true, forKey: loggedInKey)
         error = nil
         withAnimation { phase = .desktop }
     }
@@ -63,6 +77,7 @@ class AuthViewModel: ObservableObject {
     // MARK: Logout
     func logout() {
         UserDefaults.standard.set(false, forKey: loggedInKey)
+        prepareAuthScreen()
         withAnimation { phase = .auth }
     }
 

@@ -79,16 +79,7 @@ struct DesktopView: View {
         GeometryReader { geo in
             let screenSize = geo.size
             ZStack {
-                // Sfondo grigio scuro
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.13, green: 0.13, blue: 0.14),
-                        Color(red: 0.09, green: 0.09, blue: 0.10),
-                        Color(red: 0.06, green: 0.06, blue: 0.07)
-                    ],
-                    startPoint: .top, endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                DesktopWallpaper()
 
                 // Finestre aperte (anche minimizzate restano montate per preservare lo stato)
                 ForEach(desktopVM.openWindows) { window in
