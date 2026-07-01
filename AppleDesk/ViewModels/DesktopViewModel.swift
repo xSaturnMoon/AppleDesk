@@ -182,6 +182,8 @@ class DesktopViewModel: ObservableObject {
             case "zen": CGSize(width: 900, height: 580)
             case "spotify": CGSize(width: 920, height: 620)
             case "settings": CGSize(width: 980, height: 640)
+            case "geforcenow": CGSize(width: 1020, height: 680)
+            case "cs2": CGSize(width: 1080, height: 700)
             default: CGSize(width: 780, height: 560)
             }
             return (fallback, CGPoint(x: fallback.width / 2 + 40, y: fallback.height / 2 + 40))
@@ -193,6 +195,8 @@ class DesktopViewModel: ObservableObject {
         case "zen": 0.78
         case "spotify": 0.76
         case "settings": 0.82
+        case "geforcenow": 0.86
+        case "cs2": 0.90
         default: 0.68
         }
         let heightRatio: CGFloat = switch appID {
@@ -200,6 +204,8 @@ class DesktopViewModel: ObservableObject {
         case "zen": 0.82
         case "spotify": 0.84
         case "settings": 0.86
+        case "geforcenow": 0.88
+        case "cs2": 0.92
         default: 0.74
         }
 

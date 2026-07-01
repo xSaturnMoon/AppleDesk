@@ -18,6 +18,8 @@ struct AppItem: Identifiable, Hashable {
 
     // Tutte le app disponibili (per la ricerca nel menu Start)
     static let allApps: [AppItem] = defaults + [
+        AppItem(id: "geforcenow", name: "GeForce NOW", icon: "cloud.fill", iconAsset: "geforcenow_icon", color: .green, isPinned: false),
+        AppItem(id: "cs2", name: "Counter-Strike 2", icon: "scope", iconAsset: "cs2_icon", color: .orange, isPinned: false),
         AppItem(id: "spotify", name: "Spotify", icon: "music.note", iconAsset: "spotify_icon", color: .green, isPinned: false),
     ]
 }
