@@ -1,6 +1,6 @@
 import SwiftUI
 import CoreLocation
-import MapKit
+@preconcurrency import MapKit
 
 nonisolated(unsafe) private var delegateKey: UInt8 = 0
 
@@ -15,7 +15,7 @@ class WeatherService: ObservableObject {
     private func load() async {
         do {
             let location = try await requestLocation()
-            let city = await reverseGeocode(location)
+            let city = await Self.reverseGeocodeCity(location)
             await fetchWeather(lat: location.coordinate.latitude,
                                lon: location.coordinate.longitude,
                                city: city)
@@ -39,13 +39,15 @@ class WeatherService: ObservableObject {
         }
     }
 
-    private func reverseGeocode(_ location: CLLocation) async -> String {
+    /// Eseguito fuori dal MainActor: MapKit geocoding non è Sendable in Swift 6.
+    private nonisolated static func reverseGeocodeCity(_ location: CLLocation) async -> String {
         guard let request = MKReverseGeocodingRequest(location: location) else { return "—" }
         do {
             let mapItems = try await request.mapItems
             guard let item = mapItems.first else { return "—" }
             if let short = item.address?.shortAddress, !short.isEmpty {
-                return short.components(separatedBy: ",").first?.trimmingCharacters(in: .whitespaces) ?? short
+                return short.components(separatedBy: ",").first?
+                    .trimmingCharacters(in: .whitespaces) ?? short
             }
             if let name = item.name, !name.isEmpty { return name }
         } catch {}
