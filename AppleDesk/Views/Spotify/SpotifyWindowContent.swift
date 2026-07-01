@@ -4,14 +4,9 @@ struct SpotifyWindowContent: View {
     @EnvironmentObject var spotifyVM: SpotifyViewModel
 
     var body: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                SpotifyWebView(vm: spotifyVM)
-
-                overlay
-            }
-
-            SpotifyTransportBar(vm: spotifyVM)
+        ZStack {
+            SpotifyWebView(vm: spotifyVM)
+            overlay
         }
         .background(SpotifyPalette.background)
         .onAppear { spotifyVM.markWindowAttached(true) }

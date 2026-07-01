@@ -111,8 +111,14 @@ enum SpotifyBridge {
 
     static let installObserver = """
     (function() {
-        if (window.__appleDeskSpotifyBridge) return;
-        window.__appleDeskSpotifyBridge = true;
+        if (window.__appleDeskSpotifyBridgeTimer) {
+            clearInterval(window.__appleDeskSpotifyBridgeTimer);
+            window.__appleDeskSpotifyBridgeTimer = null;
+        }
+        if (window.__appleDeskSpotifyBridgeObs) {
+            window.__appleDeskSpotifyBridgeObs.disconnect();
+            window.__appleDeskSpotifyBridgeObs = null;
+        }
 
         function collect() {
             return \(readState);
@@ -124,7 +130,7 @@ enum SpotifyBridge {
             } catch (e) {}
         }
 
-        setInterval(emit, 700);
+        window.__appleDeskSpotifyBridgeTimer = setInterval(emit, 900);
         document.addEventListener('visibilitychange', emit);
 
         var obs = new MutationObserver(function() { emit(); });
@@ -132,8 +138,35 @@ enum SpotifyBridge {
             || document.querySelector('[data-testid="player-controls"]')
             || document.body;
         obs.observe(target, { childList: true, subtree: true, attributes: true });
+        window.__appleDeskSpotifyBridgeObs = obs;
 
         emit();
+    })();
+    """
+
+    static let teardownObserver = """
+    (function() {
+        if (window.__appleDeskSpotifyBridgeTimer) {
+            clearInterval(window.__appleDeskSpotifyBridgeTimer);
+            window.__appleDeskSpotifyBridgeTimer = null;
+        }
+        if (window.__appleDeskSpotifyBridgeObs) {
+            window.__appleDeskSpotifyBridgeObs.disconnect();
+            window.__appleDeskSpotifyBridgeObs = null;
+        }
+    })();
+    """
+
+    /// Ferma anteprime e audio fuori dal player principale.
+    static let suppressStrayPlayback = """
+    (function() {
+        var playerRoot = document.querySelector('[data-testid="now-playing-bar"]')
+            || document.querySelector('[data-testid="player-controls"]')
+            || document.querySelector('[data-testid="now-playing-widget"]');
+        document.querySelectorAll('audio, video').forEach(function(el) {
+            if (playerRoot && playerRoot.contains(el)) return;
+            try { el.pause(); el.muted = true; el.autoplay = false; } catch (e) {}
+        });
     })();
     """
 

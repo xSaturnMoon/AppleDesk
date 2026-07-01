@@ -16,12 +16,14 @@ class AuthViewModel: ObservableObject {
     // MARK: Boot → auth or desktop
     func finishBoot() {
         let isLoggedIn = UserDefaults.standard.bool(forKey: loggedInKey)
-        let savedUser  = UserDefaults.standard.string(forKey: usernameKey) ?? ""
-        if isLoggedIn && !savedUser.isEmpty {
+        let savedUser = UserDefaults.standard.string(forKey: usernameKey) ?? ""
+        let savedPass = UserDefaults.standard.string(forKey: passwordKey) ?? ""
+        if isLoggedIn, !savedUser.isEmpty, !savedPass.isEmpty {
             username = savedUser
             loadAvatarColor()
             withAnimation { phase = .desktop }
         } else {
+            UserDefaults.standard.set(false, forKey: loggedInKey)
             withAnimation { phase = .auth }
         }
     }

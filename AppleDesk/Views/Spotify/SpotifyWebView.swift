@@ -8,11 +8,7 @@ struct SpotifyWebView: UIViewRepresentable {
         let wv = vm.webView
         wv.navigationDelegate = context.coordinator
         wv.uiDelegate = context.coordinator
-        if wv.url == nil {
-            var req = URLRequest(url: SpotifyViewModel.playerURL)
-            req.setValue(SpotifyViewModel.playerURL.absoluteString, forHTTPHeaderField: "Referer")
-            wv.load(req)
-        }
+        vm.startInitialLoadIfNeeded()
         return wv
     }
 

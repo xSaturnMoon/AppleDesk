@@ -10,3 +10,36 @@ enum SpotifyPalette {
     static let textSecondary = Color.white.opacity(0.55)
     static let divider = Color.white.opacity(0.1)
 }
+
+struct SpotifyArtwork: View {
+    let url: URL?
+    var size: CGFloat = 44
+
+    var body: some View {
+        Group {
+            if let url {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    default:
+                        artworkPlaceholder
+                    }
+                }
+            } else {
+                artworkPlaceholder
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+    }
+
+    private var artworkPlaceholder: some View {
+        ZStack {
+            Color.white.opacity(0.08)
+            Image(systemName: "music.note")
+                .font(.system(size: size * 0.35))
+                .foregroundStyle(SpotifyPalette.accentDim)
+        }
+    }
+}

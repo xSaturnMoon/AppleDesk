@@ -28,12 +28,14 @@ final class SpotifyViewModel: ObservableObject {
     private let stateHandler = SpotifyStateHandler()
     private var bridgeInstalled = false
     private var hasLoadedOnce = false
+    private var hasStartedInitialLoad = false
 
     init() {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
         config.allowsInlineMediaPlayback = true
-        config.mediaTypesRequiringUserActionForPlayback = []
+        // Richiede tap utente prima di riprodurre — evita decine di preview che partono insieme
+        config.mediaTypesRequiringUserActionForPlayback = .all
         config.allowsAirPlayForMediaPlayback = true
 
         let prefs = WKWebpagePreferences()
@@ -59,6 +61,14 @@ final class SpotifyViewModel: ObservableObject {
         }
     }
 
+    func startInitialLoadIfNeeded() {
+        guard !hasStartedInitialLoad else { return }
+        hasStartedInitialLoad = true
+        var req = URLRequest(url: Self.playerURL)
+        req.setValue(Self.playerURL.absoluteString, forHTTPHeaderField: "Referer")
+        webView.load(req)
+    }
+
     func markWindowAttached(_ attached: Bool) {
         isWindowAttached = attached
     }
@@ -70,6 +80,7 @@ final class SpotifyViewModel: ObservableObject {
     func handleNavigationFinished(url: URL?) {
         hasLoadedOnce = true
         webView.evaluateJavaScript(SpotifyBridge.removeBanners)
+        webView.evaluateJavaScript(SpotifyBridge.suppressStrayPlayback)
         installBridgeIfNeeded()
 
         if let path = url?.path, path.contains("/login") || path.contains("/signup") {
@@ -92,7 +103,9 @@ final class SpotifyViewModel: ObservableObject {
 
     func reload() {
         hasLoadedOnce = false
+        bridgeInstalled = false
         loadState = .loading
+        webView.evaluateJavaScript(SpotifyBridge.teardownObserver)
         webView.load(URLRequest(url: Self.playerURL))
     }
 
