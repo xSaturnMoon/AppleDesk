@@ -41,36 +41,63 @@ struct ZenSidebar: View {
     // MARK: Header
 
     private var header: some View {
+        Group {
+            if expanded {
+                expandedHeader
+            } else {
+                collapsedHeader
+            }
+        }
+    }
+
+    private var expandedHeader: some View {
         HStack(spacing: 10) {
             Image("zen_icon")
                 .resizable()
                 .scaledToFit()
-                .frame(width: expanded ? 26 : 28, height: expanded ? 26 : 28)
-                .clipShape(RoundedRectangle(cornerRadius: expanded ? 6 : 7, style: .continuous))
+                .frame(width: 26, height: 26)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
 
-            if expanded {
-                Text("Zen")
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .foregroundStyle(ZenPalette.textPrimary)
-            }
+            Text("Zen")
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundStyle(ZenPalette.textPrimary)
 
             Spacer(minLength: 0)
 
-            Button {
-                withAnimation(.spring(duration: 0.28, bounce: 0.05)) {
-                    vm.sidebarCollapsed.toggle()
-                }
-            } label: {
-                Image(systemName: "sidebar.left")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(ZenPalette.textSecondary)
-                    .frame(width: 28, height: 28)
-            }
-            .buttonStyle(.plain)
+            collapseButton
         }
-        .padding(.horizontal, expanded ? ZenPalette.horizontalPadding : 10)
+        .padding(.horizontal, ZenPalette.horizontalPadding)
         .padding(.top, 14)
         .padding(.bottom, 10)
+    }
+
+    private var collapsedHeader: some View {
+        VStack(spacing: 10) {
+            Image("zen_icon")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 28, height: 28)
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+
+            collapseButton
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 14)
+        .padding(.bottom, 10)
+    }
+
+    private var collapseButton: some View {
+        Button {
+            withAnimation(.spring(duration: 0.28, bounce: 0.05)) {
+                vm.sidebarCollapsed.toggle()
+            }
+        } label: {
+            Image(systemName: "sidebar.left")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(ZenPalette.textSecondary)
+                .frame(width: 28, height: 28)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: Workspaces
@@ -176,19 +203,32 @@ struct ZenSidebar: View {
     // MARK: Footer
 
     private var footer: some View {
-        HStack {
-            Color.clear.frame(width: 28, height: 28)
-            Spacer()
-            Button { vm.showSettings = true } label: {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 15, weight: .regular))
-                    .foregroundStyle(ZenPalette.textSecondary)
-                    .frame(width: 28, height: 28)
+        Group {
+            if expanded {
+                HStack {
+                    Spacer(minLength: 0)
+                    settingsButton
+                }
+                .padding(.horizontal, ZenPalette.horizontalPadding)
+            } else {
+                HStack {
+                    Spacer(minLength: 0)
+                    settingsButton
+                    Spacer(minLength: 0)
+                }
             }
-            .buttonStyle(.plain)
         }
-        .padding(.horizontal, ZenPalette.horizontalPadding)
         .padding(.vertical, 12)
+    }
+
+    private var settingsButton: some View {
+        Button { vm.showSettings = true } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 15, weight: .regular))
+                .foregroundStyle(ZenPalette.textSecondary)
+                .frame(width: 28, height: 28)
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -201,30 +241,34 @@ private struct ZenTabRow: View {
 
     var body: some View {
         let isActive = workspace.activeTabID == tab.id
+        let shape = RoundedRectangle(cornerRadius: ZenPalette.rowRadius, style: .continuous)
 
-        Button { vm.selectTab(tab.id) } label: {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(isActive ? ZenPalette.accent : ZenPalette.textTertiary)
-                    .frame(width: 6, height: 6)
+        HStack(spacing: 8) {
+            Circle()
+                .fill(isActive ? ZenPalette.accent : ZenPalette.textTertiary)
+                .frame(width: 6, height: 6)
 
-                if expanded {
-                    Text(tab.loadedURL == nil ? "Nuova scheda" : tab.title)
-                        .font(.system(size: 12, weight: isActive ? .medium : .regular))
-                        .foregroundStyle(isActive ? ZenPalette.textPrimary : ZenPalette.textSecondary)
-                        .lineLimit(1)
-                    Spacer(minLength: 0)
+            if expanded {
+                Text(tab.loadedURL == nil ? "Nuova scheda" : tab.title)
+                    .font(.system(size: 12, weight: isActive ? .medium : .regular))
+                    .foregroundStyle(isActive ? ZenPalette.textPrimary : ZenPalette.textSecondary)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+        }
+        .padding(.horizontal, expanded ? 10 : 6)
+        .padding(.vertical, expanded ? 9 : 10)
+        .frame(maxWidth: .infinity, minHeight: expanded ? 36 : 40, alignment: expanded ? .leading : .center)
+        .background(shape.fill(isActive ? ZenPalette.rowActive : Color.clear))
+        .contentShape(shape)
+        .onTapGesture { vm.selectTab(tab.id) }
+        .overlay {
+            MiddleClickOverlay {
+                if workspace.tabs.count > 1 {
+                    vm.closeTab(tab.id)
                 }
             }
-            .padding(.horizontal, expanded ? 10 : 0)
-            .padding(.vertical, expanded ? 8 : 10)
-            .frame(maxWidth: .infinity, alignment: expanded ? .leading : .center)
-            .background(
-                RoundedRectangle(cornerRadius: ZenPalette.rowRadius, style: .continuous)
-                    .fill(isActive ? ZenPalette.rowActive : Color.clear)
-            )
         }
-        .buttonStyle(.plain)
         .contextMenu { tabContextMenu }
     }
 

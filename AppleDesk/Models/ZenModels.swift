@@ -72,7 +72,6 @@ struct ZenShortcut: Identifiable, Codable, Equatable {
 // MARK: - Zen Boosts (semplificati)
 struct ZenBoostSettings: Codable, Equatable {
     var forceDarkMode: Bool = false
-    var largerText: Bool = false
     var blockTrackers: Bool = true
 }
 

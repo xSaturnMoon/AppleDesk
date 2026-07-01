@@ -120,7 +120,19 @@ final class ZenViewModel: ObservableObject {
     @Published var zoomLevel: Double = 1.0 {
         didSet {
             UserDefaults.standard.set(zoomLevel, forKey: "zen_zoom")
-            applyZoomToAllTabs()
+            applyPageStylesToAllTabs()
+        }
+    }
+    @Published var textScale: Double = 1.0 {
+        didSet {
+            UserDefaults.standard.set(textScale, forKey: "zen_text_scale")
+            applyPageStylesToAllTabs()
+        }
+    }
+    @Published var imageScale: Double = 1.0 {
+        didSet {
+            UserDefaults.standard.set(imageScale, forKey: "zen_image_scale")
+            applyPageStylesToAllTabs()
         }
     }
     @Published var history: [String] = []
@@ -128,7 +140,10 @@ final class ZenViewModel: ObservableObject {
         didSet { persistShortcuts() }
     }
     @Published var boosts = ZenBoostSettings() {
-        didSet { persistSettings() }
+        didSet {
+            persistSettings()
+            applyPageStylesToAllTabs()
+        }
     }
     @Published var splitLayout: ZenSplitLayout = .single {
         didSet { syncSplitTabs() }
@@ -159,6 +174,10 @@ final class ZenViewModel: ObservableObject {
     init() {
         let savedZoom = UserDefaults.standard.double(forKey: "zen_zoom")
         zoomLevel = savedZoom == 0 ? 1.0 : savedZoom
+        let savedText = UserDefaults.standard.double(forKey: "zen_text_scale")
+        textScale = savedText == 0 ? 1.0 : savedText
+        let savedImage = UserDefaults.standard.double(forKey: "zen_image_scale")
+        imageScale = savedImage == 0 ? 1.0 : savedImage
         loadPersistedState()
         setupGlanceHandler()
         if workspaces.isEmpty { createDefaultWorkspaces() }
@@ -404,12 +423,9 @@ final class ZenViewModel: ObservableObject {
               var s=document.getElementById('zen-boost-dark');
               if(!s){s=document.createElement('style');s.id='zen-boost-dark';
               s.textContent='html,body{background:#111!important;color:#eee!important}\
-              a{color:#8ab4f8!important}img,video{opacity:.92}';document.head.appendChild(s);}
+              a{color:#8ab4f8!important}';document.head.appendChild(s);}
             })();
             """)
-        }
-        if boosts.largerText {
-            parts.append("document.documentElement.style.fontSize='112%';")
         }
         if boosts.blockTrackers {
             parts.append("""
@@ -422,17 +438,34 @@ final class ZenViewModel: ObservableObject {
     }
 
     func applyBoosts(to webView: WKWebView) {
+        applyPageStyles(to: webView)
+    }
+
+    func applyPageStyles(to webView: WKWebView) {
+        webView.evaluateJavaScript("document.body.style.zoom = '\(zoomLevel)'")
+
+        let textPct = textScale * 100.0
+        let imgZoom = imageScale
+        let styleScript = """
+        (function(){
+          var s=document.getElementById('zen-page-styles');
+          if(!s){s=document.createElement('style');s.id='zen-page-styles';document.head.appendChild(s);}
+          s.textContent='html{font-size:\(textPct)%!important}body{font-size:inherit!important}\
+          img,picture,video,canvas,svg{zoom:\(imgZoom)!important}';
+        })();
+        """
+        webView.evaluateJavaScript(styleScript)
         webView.evaluateJavaScript(boostScript())
     }
 
     func applyZoom(to webView: WKWebView) {
-        webView.evaluateJavaScript("document.body.style.zoom = '\(zoomLevel)'")
+        applyPageStyles(to: webView)
     }
 
-    private func applyZoomToAllTabs() {
+    private func applyPageStylesToAllTabs() {
         for ws in workspaces {
             for tab in ws.tabs {
-                applyZoom(to: tab.webView)
+                applyPageStyles(to: tab.webView)
             }
         }
     }

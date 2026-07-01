@@ -15,12 +15,12 @@ struct ZenWebView: UIViewRepresentable {
             wv.load(URLRequest(url: url))
         }
         context.coordinator.injectGlanceScript(into: wv)
-        vm.applyZoom(to: wv)
+        vm.applyPageStyles(to: wv)
         return wv
     }
 
     func updateUIView(_ uiView: WKWebView, context: Context) {
-        vm.applyZoom(to: uiView)
+        vm.applyPageStyles(to: uiView)
         guard let target = tab.loadedURL else {
             if uiView.url != nil && !isGlance {
                 // home page — stop current load
@@ -66,8 +66,7 @@ struct ZenWebView: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            parent.vm.applyBoosts(to: webView)
-            parent.vm.applyZoom(to: webView)
+            parent.vm.applyPageStyles(to: webView)
             injectGlanceScript(into: webView)
 
             DispatchQueue.main.async {

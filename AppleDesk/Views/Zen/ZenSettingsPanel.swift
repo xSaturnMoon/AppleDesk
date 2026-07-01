@@ -11,6 +11,8 @@ struct ZenSettingsPanel: View {
                     themeSection
                     searchSection
                     zoomSection
+                    textScaleSection
+                    imageScaleSection
                     boostsSection
                     privacySection
                 }
@@ -27,7 +29,7 @@ struct ZenSettingsPanel: View {
                 }
             }
         }
-        .frame(width: 360, height: 500)
+        .frame(width: 360, height: 560)
         .background(.ultraThinMaterial)
         .environment(\.colorScheme, .dark)
     }
@@ -75,29 +77,68 @@ struct ZenSettingsPanel: View {
     }
 
     private var zoomSection: some View {
-        settingsCard("Zoom — \(Int(vm.zoomLevel * 100))%") {
-            HStack(spacing: 12) {
-                Button { vm.zoomLevel = max(0.5, vm.zoomLevel - 0.1) } label: {
-                    Image(systemName: "minus")
-                        .frame(width: 32, height: 32)
-                        .zenInsetField()
-                }
-                .buttonStyle(.plain)
-                Slider(value: $vm.zoomLevel, in: 0.5...2.0, step: 0.05).tint(ZenPalette.accent)
-                Button { vm.zoomLevel = min(2.0, vm.zoomLevel + 0.1) } label: {
-                    Image(systemName: "plus")
-                        .frame(width: 32, height: 32)
-                        .zenInsetField()
-                }
-                .buttonStyle(.plain)
+        settingsCard("Zoom pagina — \(Int(vm.zoomLevel * 100))%") {
+            scaleSlider(
+                value: $vm.zoomLevel,
+                range: 0.5...2.0,
+                step: 0.05,
+                onMinus: { vm.zoomLevel = max(0.5, vm.zoomLevel - 0.1) },
+                onPlus: { vm.zoomLevel = min(2.0, vm.zoomLevel + 0.1) }
+            )
+        }
+    }
+
+    private var textScaleSection: some View {
+        settingsCard("Testo — \(Int(vm.textScale * 100))%") {
+            scaleSlider(
+                value: $vm.textScale,
+                range: 0.75...1.75,
+                step: 0.05,
+                onMinus: { vm.textScale = max(0.75, vm.textScale - 0.05) },
+                onPlus: { vm.textScale = min(1.75, vm.textScale + 0.05) }
+            )
+        }
+    }
+
+    private var imageScaleSection: some View {
+        settingsCard("Immagini — \(Int(vm.imageScale * 100))%") {
+            scaleSlider(
+                value: $vm.imageScale,
+                range: 0.5...2.0,
+                step: 0.05,
+                onMinus: { vm.imageScale = max(0.5, vm.imageScale - 0.1) },
+                onPlus: { vm.imageScale = min(2.0, vm.imageScale + 0.1) }
+            )
+        }
+    }
+
+    private func scaleSlider(
+        value: Binding<Double>,
+        range: ClosedRange<Double>,
+        step: Double,
+        onMinus: @escaping () -> Void,
+        onPlus: @escaping () -> Void
+    ) -> some View {
+        HStack(spacing: 12) {
+            Button(action: onMinus) {
+                Image(systemName: "minus")
+                    .frame(width: 32, height: 32)
+                    .zenInsetField()
             }
+            .buttonStyle(.plain)
+            Slider(value: value, in: range, step: step).tint(ZenPalette.accent)
+            Button(action: onPlus) {
+                Image(systemName: "plus")
+                    .frame(width: 32, height: 32)
+                    .zenInsetField()
+            }
+            .buttonStyle(.plain)
         }
     }
 
     private var boostsSection: some View {
         settingsCard("Boosts") {
             toggleRow("Dark mode", isOn: $vm.boosts.forceDarkMode)
-            toggleRow("Testo più grande", isOn: $vm.boosts.largerText)
             toggleRow("Blocca tracker", isOn: $vm.boosts.blockTrackers)
         }
     }
