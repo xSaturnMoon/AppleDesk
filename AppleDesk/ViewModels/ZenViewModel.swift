@@ -290,7 +290,7 @@ final class ZenViewModel: ObservableObject {
         let target = tab ?? focusedTab ?? activeWorkspace?.activeTab
         guard let target else { return }
 
-        var text = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
         let resolved: URL
@@ -418,7 +418,7 @@ final class ZenViewModel: ObservableObject {
               if(b.some(function(x){return s.src.indexOf(x)>-1}))s.remove();});})();
             """)
         }
-        return parts.join("\n")
+        return parts.joined(separator: "\n")
     }
 
     func applyBoosts(to webView: WKWebView) {
