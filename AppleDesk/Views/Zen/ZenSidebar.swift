@@ -42,19 +42,14 @@ struct ZenSidebar: View {
 
     private var header: some View {
         Group {
-            if expanded {
-                expandedHeader
-            } else {
-                collapsedHeader
-            }
+            if expanded { expandedHeader } else { collapsedHeader }
         }
     }
 
     private var expandedHeader: some View {
         HStack(spacing: 10) {
             Image("zen_icon")
-                .resizable()
-                .scaledToFit()
+                .resizable().scaledToFit()
                 .frame(width: 26, height: 26)
                 .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
 
@@ -63,7 +58,6 @@ struct ZenSidebar: View {
                 .foregroundStyle(ZenPalette.textPrimary)
 
             Spacer(minLength: 0)
-
             collapseButton
         }
         .padding(.horizontal, ZenPalette.horizontalPadding)
@@ -74,11 +68,9 @@ struct ZenSidebar: View {
     private var collapsedHeader: some View {
         VStack(spacing: 10) {
             Image("zen_icon")
-                .resizable()
-                .scaledToFit()
+                .resizable().scaledToFit()
                 .frame(width: 28, height: 28)
                 .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-
             collapseButton
         }
         .frame(maxWidth: .infinity)
@@ -112,7 +104,7 @@ struct ZenSidebar: View {
 
             VStack(spacing: 4) {
                 ForEach(vm.workspaces) { ws in
-                    workspaceRow(ws)
+                    ZenWorkspaceRow(vm: vm, workspace: ws)
                 }
 
                 Button { vm.showNewWorkspacePrompt = true } label: {
@@ -131,29 +123,6 @@ struct ZenSidebar: View {
             }
             .padding(.horizontal, ZenPalette.horizontalPadding)
         }
-    }
-
-    private func workspaceRow(_ ws: ZenWorkspace) -> some View {
-        let selected = vm.activeWorkspaceID == ws.id
-        return Button { vm.switchWorkspace(ws.id) } label: {
-            HStack(spacing: 8) {
-                Image(systemName: ws.symbol)
-                    .font(.system(size: 12, weight: .medium))
-                    .frame(width: 16)
-                Text(ws.name)
-                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-            }
-            .foregroundStyle(selected ? .white : ZenPalette.textSecondary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
-            .background(
-                RoundedRectangle(cornerRadius: ZenPalette.rowRadius, style: .continuous)
-                    .fill(selected ? ZenPalette.accent : ZenPalette.rowHover.opacity(0.5))
-            )
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: Nuova scheda
@@ -232,6 +201,44 @@ struct ZenSidebar: View {
     }
 }
 
+// MARK: - Workspace row
+private struct ZenWorkspaceRow: View {
+    @ObservedObject var vm: ZenViewModel
+    @ObservedObject var workspace: ZenWorkspace
+
+    var body: some View {
+        let selected = vm.activeWorkspaceID == workspace.id
+        let shape = RoundedRectangle(cornerRadius: ZenPalette.rowRadius, style: .continuous)
+
+        Button { vm.switchWorkspace(workspace.id) } label: {
+            HStack(spacing: 8) {
+                Image(systemName: workspace.symbol)
+                    .font(.system(size: 12, weight: .medium))
+                    .frame(width: 16)
+                Text(workspace.name)
+                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(selected ? .white : ZenPalette.textSecondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(shape.fill(selected ? vm.accent : ZenPalette.rowHover.opacity(0.5)))
+            .contentShape(shape)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button { vm.beginRenameWorkspace(workspace) } label: {
+                Label("Rinomina", systemImage: "pencil")
+            }
+            Button { vm.beginChangeWorkspaceIcon(workspace) } label: {
+                Label("Cambia icona", systemImage: "square.grid.2x2")
+            }
+        }
+    }
+}
+
 // MARK: - Tab row
 private struct ZenTabRow: View {
     @ObservedObject var vm: ZenViewModel
@@ -245,7 +252,7 @@ private struct ZenTabRow: View {
 
         HStack(spacing: 8) {
             Circle()
-                .fill(isActive ? ZenPalette.accent : ZenPalette.textTertiary)
+                .fill(isActive ? vm.accent : ZenPalette.textTertiary)
                 .frame(width: 6, height: 6)
 
             if expanded {
@@ -263,11 +270,7 @@ private struct ZenTabRow: View {
         .contentShape(shape)
         .onTapGesture { vm.selectTab(tab.id) }
         .overlay {
-            MiddleClickOverlay {
-                if workspace.tabs.count > 1 {
-                    vm.closeTab(tab.id)
-                }
-            }
+            MiddleClickOverlay { vm.closeTab(tab.id) }
         }
         .contextMenu { tabContextMenu }
     }
@@ -282,10 +285,8 @@ private struct ZenTabRow: View {
         Button { vm.togglePin(tab) } label: {
             Label(tab.isPinned ? "Rimuovi pin" : "Fissa scheda", systemImage: "pin")
         }
-        if workspace.tabs.count > 1 {
-            Button(role: .destructive) { vm.closeTab(tab.id) } label: {
-                Label("Chiudi", systemImage: "xmark")
-            }
+        Button(role: .destructive) { vm.closeTab(tab.id) } label: {
+            Label("Chiudi scheda", systemImage: "xmark")
         }
     }
 }

@@ -53,7 +53,7 @@ struct ZenToolbar: View {
             ))
             .font(.system(size: 13, weight: .regular, design: .rounded))
             .foregroundStyle(ZenPalette.textPrimary)
-            .tint(ZenPalette.accent)
+            .tint(vm.accent)
             .multilineTextAlignment(.center)
             .autocorrectionDisabled()
             .textInputAutocapitalization(.never)

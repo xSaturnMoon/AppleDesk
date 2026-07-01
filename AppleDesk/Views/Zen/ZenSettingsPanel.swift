@@ -18,14 +18,14 @@ struct ZenSettingsPanel: View {
                 }
                 .padding(18)
             }
-            .background(ZenPalette.canvas)
+            .background(vm.theme.canvas)
             .navigationTitle("Impostazioni")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Fine") { dismiss() }
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(ZenPalette.accent)
+                        .foregroundStyle(vm.accent)
                 }
             }
         }
@@ -37,7 +37,9 @@ struct ZenSettingsPanel: View {
     private var themeSection: some View {
         settingsCard("Aspetto") {
             ForEach(ZenTheme.allCases) { theme in
-                Button { vm.theme = theme } label: {
+                Button {
+                    withAnimation(.spring(duration: 0.25, bounce: 0.05)) { vm.theme = theme }
+                } label: {
                     HStack(spacing: 10) {
                         Circle().fill(theme.accent).frame(width: 14, height: 14)
                         Text(theme.rawValue)
@@ -47,7 +49,7 @@ struct ZenSettingsPanel: View {
                         if vm.theme == theme {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(ZenPalette.accent)
+                                .foregroundStyle(vm.accent)
                         }
                     }
                     .padding(.vertical, 6)
@@ -67,7 +69,7 @@ struct ZenSettingsPanel: View {
                             .foregroundStyle(vm.searchEngine == engine ? .white : ZenPalette.textSecondary)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 7)
-                            .background(vm.searchEngine == engine ? ZenPalette.accent : Color.white.opacity(0.05))
+                            .background(vm.searchEngine == engine ? vm.accent : Color.white.opacity(0.05))
                             .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
@@ -92,9 +94,9 @@ struct ZenSettingsPanel: View {
         settingsCard("Testo — \(Int(vm.textScale * 100))%") {
             scaleSlider(
                 value: $vm.textScale,
-                range: 0.75...1.75,
+                range: 0.10...1.75,
                 step: 0.05,
-                onMinus: { vm.textScale = max(0.75, vm.textScale - 0.05) },
+                onMinus: { vm.textScale = max(0.10, vm.textScale - 0.05) },
                 onPlus: { vm.textScale = min(1.75, vm.textScale + 0.05) }
             )
         }
@@ -126,7 +128,7 @@ struct ZenSettingsPanel: View {
                     .zenInsetField()
             }
             .buttonStyle(.plain)
-            Slider(value: value, in: range, step: step).tint(ZenPalette.accent)
+            Slider(value: value, in: range, step: step).tint(vm.accent)
             Button(action: onPlus) {
                 Image(systemName: "plus")
                     .frame(width: 32, height: 32)
@@ -147,7 +149,7 @@ struct ZenSettingsPanel: View {
         settingsCard("Privacy") {
             Toggle("Sessione privata", isOn: $vm.isPrivateSession)
                 .font(.system(size: 13))
-                .tint(ZenPalette.accent)
+                .tint(vm.accent)
             Button("Cancella cronologia") {
                 vm.history.removeAll()
                 UserDefaults.standard.removeObject(forKey: "zen_history")

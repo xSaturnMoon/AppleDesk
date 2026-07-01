@@ -16,7 +16,7 @@ struct ZenContentArea: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(ZenPalette.canvasElevated)
+        .background(vm.theme.canvasElevated)
     }
 
     private var singlePane: some View {
@@ -94,7 +94,7 @@ struct ZenTabPane: View {
             if tab.loadedURL != nil {
                 ZenWebView(tab: tab, vm: vm)
                 if tab.isLoading {
-                    ProgressView().tint(ZenPalette.accent)
+                    ProgressView().tint(vm.accent)
                 }
             } else {
                 ZenHomePage(
@@ -109,7 +109,7 @@ struct ZenTabPane: View {
         .overlay {
             if vm.splitLayout != .single && isFocused {
                 RoundedRectangle(cornerRadius: 0)
-                    .stroke(ZenPalette.accent.opacity(0.35), lineWidth: 1)
+                    .stroke(vm.accent.opacity(0.35), lineWidth: 1)
             }
         }
         .contentShape(Rectangle())

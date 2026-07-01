@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - Temi Zen
-enum ZenTheme: String, CaseIterable, Identifiable, Codable {
+enum ZenTheme: String, CaseIterable, Identifiable, Codable, Equatable {
     case midnight = "Mezzanotte"
     case dusk = "Crepuscolo"
     case ember = "Brace"
@@ -20,10 +20,40 @@ enum ZenTheme: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    /// Sfondo uniforme — niente gradienti invasivi
-    var gradient: [Color] {
-        [ZenPalette.canvas, ZenPalette.canvas]
+    var canvas: Color {
+        switch self {
+        case .midnight: return Color(red: 0.09, green: 0.09, blue: 0.095)
+        case .dusk:     return Color(red: 0.10, green: 0.08, blue: 0.14)
+        case .ember:    return Color(red: 0.12, green: 0.08, blue: 0.07)
+        case .ocean:    return Color(red: 0.07, green: 0.10, blue: 0.15)
+        case .forest:   return Color(red: 0.07, green: 0.11, blue: 0.09)
+        }
     }
+
+    var canvasElevated: Color {
+        switch self {
+        case .midnight: return Color(red: 0.11, green: 0.11, blue: 0.115)
+        case .dusk:     return Color(red: 0.12, green: 0.10, blue: 0.17)
+        case .ember:    return Color(red: 0.14, green: 0.09, blue: 0.08)
+        case .ocean:    return Color(red: 0.09, green: 0.12, blue: 0.18)
+        case .forest:   return Color(red: 0.09, green: 0.13, blue: 0.11)
+        }
+    }
+
+    /// Sfondo uniforme tintato dal tema
+    var gradient: [Color] {
+        [canvas, canvas]
+    }
+}
+
+// MARK: - Icone workspace
+enum ZenWorkspaceIcons {
+    static let choices: [String] = [
+        "house.fill", "briefcase.fill", "book.fill", "star.fill", "heart.fill",
+        "gamecontroller.fill", "music.note", "photo.fill", "cart.fill", "airplane",
+        "leaf.fill", "graduationcap.fill", "hammer.fill", "paintbrush.fill", "globe",
+        "folder.fill", "bolt.fill", "cup.and.saucer.fill"
+    ]
 }
 
 // MARK: - Split View (fino a 4 pannelli)

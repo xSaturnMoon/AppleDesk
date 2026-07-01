@@ -33,7 +33,7 @@ struct ZenGlanceOverlay: View {
             Spacer()
             Button("Apri in scheda") { vm.promoteGlanceToTab() }
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(ZenPalette.accent)
+                .foregroundStyle(vm.accent)
                 .buttonStyle(.plain)
             Button { vm.closeGlance() } label: {
                 Image(systemName: "xmark")

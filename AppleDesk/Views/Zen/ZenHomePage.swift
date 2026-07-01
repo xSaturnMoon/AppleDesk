@@ -32,7 +32,7 @@ struct ZenHomePage: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(ZenPalette.canvas)
+        .background(vm.theme.canvas)
     }
 
     // MARK: Hero
@@ -77,7 +77,7 @@ struct ZenHomePage: View {
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: 30, height: 30)
-                    .background(ZenPalette.accent)
+                    .background(vm.accent)
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)

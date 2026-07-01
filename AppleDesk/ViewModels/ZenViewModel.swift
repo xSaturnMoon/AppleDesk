@@ -159,6 +159,12 @@ final class ZenViewModel: ObservableObject {
     @Published var showHistory = false
     @Published var showNewWorkspacePrompt = false
     @Published var newWorkspaceName = ""
+    @Published var editingWorkspaceID: UUID?
+    @Published var workspaceRenameText = ""
+    @Published var showWorkspaceRename = false
+    @Published var showWorkspaceIconPicker = false
+
+    var accent: Color { theme.accent }
 
     var activeWorkspace: ZenWorkspace? {
         workspaces.first { $0.id == activeWorkspaceID } ?? workspaces.first
@@ -214,6 +220,38 @@ final class ZenViewModel: ObservableObject {
         persistWorkspaces()
     }
 
+    func beginRenameWorkspace(_ ws: ZenWorkspace) {
+        editingWorkspaceID = ws.id
+        workspaceRenameText = ws.name
+        showWorkspaceRename = true
+    }
+
+    func confirmRenameWorkspace() {
+        let name = workspaceRenameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty,
+              let id = editingWorkspaceID,
+              let ws = workspaces.first(where: { $0.id == id }) else { return }
+        ws.name = name
+        editingWorkspaceID = nil
+        workspaceRenameText = ""
+        showWorkspaceRename = false
+        persistWorkspaces()
+    }
+
+    func beginChangeWorkspaceIcon(_ ws: ZenWorkspace) {
+        editingWorkspaceID = ws.id
+        showWorkspaceIconPicker = true
+    }
+
+    func setWorkspaceIcon(_ symbol: String) {
+        guard let id = editingWorkspaceID,
+              let ws = workspaces.first(where: { $0.id == id }) else { return }
+        ws.symbol = symbol
+        editingWorkspaceID = nil
+        showWorkspaceIconPicker = false
+        persistWorkspaces()
+    }
+
     // MARK: - Tabs
 
     func makeTab() -> ZenTabModel {
@@ -230,8 +268,16 @@ final class ZenViewModel: ObservableObject {
     }
 
     func closeTab(_ id: UUID) {
-        guard let ws = activeWorkspace else { return }
-        guard ws.tabs.count > 1 else { return }
+        guard let ws = activeWorkspace,
+              let tab = ws.tabs.first(where: { $0.id == id }) else { return }
+
+        if ws.tabs.count == 1 {
+            goHome(on: tab)
+            tab.title = "Nuova scheda"
+            persistWorkspaces()
+            return
+        }
+
         ws.tabs.removeAll { $0.id == id }
         if ws.activeTabID == id { ws.activeTabID = ws.tabs.last?.id }
         splitTabIDs.removeAll { $0 == id }
