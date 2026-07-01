@@ -230,7 +230,8 @@ struct FinderColumnsView: View {
                 let items: [FinderItem] = vm.columnItems.indices.contains(index) ? vm.columnItems[index] : []
                 let selectedURL: URL? = vm.columnPath.indices.contains(index + 1) ? vm.columnPath[index + 1] : nil
                 FinderColumnPane(vm: vm, items: items, selectedURL: selectedURL)
-                    .frame(width: 220, maxHeight: .infinity)
+                    .frame(width: 220)
+                    .frame(maxHeight: .infinity)
 
                 if index < vm.columnPath.count - 1 {
                     Rectangle().fill(.white.opacity(0.08)).frame(width: 1)
