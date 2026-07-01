@@ -31,6 +31,15 @@ final class FinderViewModel: ObservableObject {
     @Published var renameText = ""
     @Published var itemPendingDelete: FinderItem?
     @Published var showDeleteConfirm = false
+    // Archiviazione (Zip/Unzip)
+    @Published var zipItem: FinderItem?
+    @Published var zipName = ""
+    @Published var showZipPrompt = false
+
+    @Published var unzipItem: FinderItem?
+    @Published var unzipName = ""
+    @Published var showUnzipPrompt = false
+
     @Published var errorMessage: String?
 
     init() {
@@ -197,6 +206,47 @@ final class FinderViewModel: ObservableObject {
             errorMessage = error.localizedDescription
         }
         itemPendingDelete = nil
+    }
+
+    // MARK: - Zip / Unzip
+
+    func beginZip(_ item: FinderItem) {
+        zipItem = item
+        zipName = item.name
+        showZipPrompt = true
+    }
+
+    func confirmZip() {
+        guard let item = zipItem else { return }
+        do {
+            try FinderService.zip(item, archiveName: zipName)
+            reload()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        zipItem = nil
+        showZipPrompt = false
+    }
+
+    func beginUnzip(_ item: FinderItem) {
+        unzipItem = item
+        // Rimuove l'estensione .zip per suggerire il nome della cartella estratta
+        let ext = item.url.pathExtension
+        let baseName = item.name.dropLast(ext.count + (ext.isEmpty ? 0 : 1))
+        unzipName = String(baseName)
+        showUnzipPrompt = true
+    }
+
+    func confirmUnzip() {
+        guard let item = unzipItem else { return }
+        do {
+            try FinderService.unzip(item, folderName: unzipName)
+            reload()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        unzipItem = nil
+        showUnzipPrompt = false
     }
 
     /// Sposta un item (identificato dal path, usato per il drag & drop) dentro `destination`.

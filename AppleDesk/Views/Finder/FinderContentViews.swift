@@ -43,6 +43,21 @@ private struct FinderItemContextMenu: ViewModifier {
                 } label: {
                     Label("Rinomina", systemImage: "pencil")
                 }
+                
+                Button {
+                    vm.beginZip(item)
+                } label: {
+                    Label("Comprimi", systemImage: "doc.zipper")
+                }
+                
+                if item.url.pathExtension.lowercased() == "zip" {
+                    Button {
+                        vm.beginUnzip(item)
+                    } label: {
+                        Label("Decomprimi", systemImage: "arrow.up.doc")
+                    }
+                }
+                
                 Button(role: .destructive) {
                     vm.requestDelete(item)
                 } label: {

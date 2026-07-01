@@ -46,6 +46,20 @@ struct FinderWindowContent: View {
             Button("Annulla", role: .cancel) { vm.itemPendingDelete = nil }
         }
 
+        // Zip
+        .alert("Comprimi", isPresented: $vm.showZipPrompt) {
+            TextField("Nome archivio", text: $vm.zipName)
+            Button("Annulla", role: .cancel) { vm.zipItem = nil }
+            Button("Comprimi") { vm.confirmZip() }
+        }
+
+        // Unzip
+        .alert("Decomprimi", isPresented: $vm.showUnzipPrompt) {
+            TextField("Nome cartella", text: $vm.unzipName)
+            Button("Annulla", role: .cancel) { vm.unzipItem = nil }
+            Button("Decomprimi") { vm.confirmUnzip() }
+        }
+
         // Errori
         .alert("Errore", isPresented: Binding(
             get: { vm.errorMessage != nil },

@@ -18,11 +18,18 @@ settings:
     STRIP_SWIFT_SYMBOLS: NO
     ONLY_ACTIVE_ARCH: NO
 
+packages:
+  ZIPFoundation:
+    url: https://github.com/weichsel/ZIPFoundation.git
+    from: 0.9.19
+
 targets:
   AppleDesk:
     type: application
     platform: iOS
     deploymentTarget: "26.0"
+    dependencies:
+      - package: ZIPFoundation
     sources:
       - AppleDesk
     info:

@@ -1,4 +1,5 @@
 import Foundation
+import ZIPFoundation
 
 // MARK: - Finder Service
 // Parla col vero filesystem dell'app: la cartella Documents dell'app compare
@@ -99,6 +100,39 @@ enum FinderService {
         try FileManager.default.moveItem(at: item.url, to: target)
     }
 
+    // MARK: - Archiviazione (ZIP)
+
+    static func zip(_ item: FinderItem, archiveName: String) throws {
+        let clean = archiveName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { throw FinderError.invalidName }
+        let folder = item.url.deletingLastPathComponent()
+        let zipName = clean.lowercased().hasSuffix(".zip") ? clean : clean + ".zip"
+        let destinationURL = uniqueURL(for: folder.appendingPathComponent(zipName))
+        
+        let fm = FileManager.default
+        try fm.zipItem(at: item.url, to: destinationURL)
+    }
+
+    static func unzip(_ item: FinderItem, folderName: String) throws {
+        let clean = folderName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { throw FinderError.invalidName }
+        guard item.url.pathExtension.lowercased() == "zip" else { throw FinderError.invalidArchive }
+        
+        let folder = item.url.deletingLastPathComponent()
+        let destinationURL = uniqueURL(for: folder.appendingPathComponent(clean, isDirectory: true))
+        
+        let fm = FileManager.default
+        try fm.createDirectory(at: destinationURL, withIntermediateDirectories: true)
+        
+        do {
+            try fm.unzipItem(at: item.url, to: destinationURL)
+        } catch {
+            // Clean up if unzip fails
+            try? fm.removeItem(at: destinationURL)
+            throw error
+        }
+    }
+
     // MARK: - Helpers
 
     /// Se esiste già un file/cartella con lo stesso nome, aggiunge un contatore ("nome 2", "nome 3"...)
@@ -123,12 +157,14 @@ enum FinderError: LocalizedError {
     case invalidName
     case invalidDestination
     case systemFolderProtected
+    case invalidArchive
 
     var errorDescription: String? {
         switch self {
         case .invalidName:        return "Nome non valido."
         case .invalidDestination: return "Non puoi spostare un elemento dentro se stesso."
         case .systemFolderProtected: return "Operazione non consentita su questa cartella di sistema."
+        case .invalidArchive: return "Formato archivio non valido."
         }
     }
 }
