@@ -73,6 +73,7 @@ struct DesktopView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var weatherService: WeatherService
     @EnvironmentObject var batteryService: BatteryService
+    @EnvironmentObject var spotifyVM: SpotifyViewModel
 
     var body: some View {
         GeometryReader { geo in
@@ -137,6 +138,7 @@ struct DesktopView: View {
                             .environmentObject(authVM)
                             .environmentObject(weatherService)
                             .environmentObject(batteryService)
+                            .environmentObject(spotifyVM)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                             .padding(.bottom, 16)
                             .zIndex(200)

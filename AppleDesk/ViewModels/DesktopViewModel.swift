@@ -172,13 +172,28 @@ class DesktopViewModel: ObservableObject {
     private func defaultWindowFrame(for appID: String) -> (size: CGSize, position: CGPoint) {
         // Fallback se lo schermo non è ancora noto (primissimo frame)
         guard screenSize.width > 0, screenSize.height > 0 else {
-            let fallback = appID == "finder" ? CGSize(width: 860, height: 540) : (appID == "zen" ? CGSize(width: 900, height: 580) : CGSize(width: 780, height: 560))
+            let fallback: CGSize = switch appID {
+            case "finder": CGSize(width: 860, height: 540)
+            case "zen": CGSize(width: 900, height: 580)
+            case "spotify": CGSize(width: 920, height: 620)
+            default: CGSize(width: 780, height: 560)
+            }
             return (fallback, CGPoint(x: fallback.width / 2 + 40, y: fallback.height / 2 + 40))
         }
 
         // Finder un filo più grande delle altre app, ma sempre entro lo schermo disponibile
-        let widthRatio: CGFloat = appID == "finder" ? 0.72 : (appID == "zen" ? 0.78 : 0.68)
-        let heightRatio: CGFloat = appID == "finder" ? 0.78 : (appID == "zen" ? 0.82 : 0.74)
+        let widthRatio: CGFloat = switch appID {
+        case "finder": 0.72
+        case "zen": 0.78
+        case "spotify": 0.76
+        default: 0.68
+        }
+        let heightRatio: CGFloat = switch appID {
+        case "finder": 0.78
+        case "zen": 0.82
+        case "spotify": 0.84
+        default: 0.74
+        }
 
         let availableHeight = screenSize.height - taskbarReservedHeight
         let width = min(screenSize.width * widthRatio, screenSize.width - 80)

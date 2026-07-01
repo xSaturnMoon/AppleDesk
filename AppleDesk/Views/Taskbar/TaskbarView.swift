@@ -1,21 +1,29 @@
 import SwiftUI
 import AVFoundation
-import MediaPlayer
 
 // MARK: - TaskbarView
 struct TaskbarView: View {
     @EnvironmentObject var desktopVM: DesktopViewModel
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var weatherService: WeatherService
+    @EnvironmentObject var spotifyVM: SpotifyViewModel
+
+    private var spotifyIsOpen: Bool {
+        desktopVM.openWindows.contains { $0.appID == "spotify" }
+    }
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
             WeatherPill()
+            if spotifyIsOpen, spotifyVM.playback.hasTrack {
+                SpotifyNowPlayingPill()
+            }
             DockPill()
             StatusPill()
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 2)
+        .animation(.spring(duration: 0.35, bounce: 0.12), value: spotifyVM.playback.title)
     }
 }
 
@@ -139,11 +147,12 @@ struct DockIcon: View {
 struct StatusPill: View {
     @EnvironmentObject var desktopVM: DesktopViewModel
     @EnvironmentObject var batteryService: BatteryService
+    @EnvironmentObject var spotifyVM: SpotifyViewModel
     @State private var now = Date()
     @State private var showControlCenter = false
     let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    var spotifyOpen: Bool {
+    private var spotifyIsOpen: Bool {
         desktopVM.openWindows.contains { $0.appID == "spotify" }
     }
 
@@ -171,7 +180,8 @@ struct StatusPill: View {
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
             .stroke(.white.opacity(0.15), lineWidth: 0.5))
         .popover(isPresented: $showControlCenter) {
-            ControlCenterView(spotifyOpen: spotifyOpen)
+            ControlCenterView(spotifyIsOpen: spotifyIsOpen)
+                .environmentObject(spotifyVM)
                 .presentationCompactAdaptation(.popover)
         }
         .onChange(of: showControlCenter) { _, open in
@@ -223,27 +233,17 @@ struct BatteryView: View {
 
 // MARK: - Control Center
 struct ControlCenterView: View {
-    let spotifyOpen: Bool
+    let spotifyIsOpen: Bool
+    @EnvironmentObject var spotifyVM: SpotifyViewModel
 
-    // Luminosità: leggiamo da UIScreen al momento dell'apertura
     @State private var brightness: Double = 0.5
-    // Volume: read-only da AVAudioSession, mostriamo solo il valore reale
     @State private var volume: Double = Double(AVAudioSession.sharedInstance().outputVolume)
 
-    // Spotify now playing
-    @State private var trackTitle: String = ""
-    @State private var trackArtist: String = ""
-    @State private var artwork: UIImage? = nil
-    @State private var isPlaying: Bool = false
-    @State private var isLooping: Bool = false
-
-    let refreshTimer = Timer.publish(every: 1.5, on: .main, in: .common).autoconnect()
     let volTimer = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()
 
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Orologio
                 TimelineView(.periodic(from: Date(), by: 1)) { ctx in
                     Text(ctx.date, format: .dateTime.hour().minute().second())
                         .font(.system(size: 42, weight: .light, design: .rounded))
@@ -253,9 +253,7 @@ struct ControlCenterView: View {
                 }
                 .padding(.top, 10)
 
-                // Luminosità + Volume
                 VStack(spacing: 16) {
-                    // Luminosità (funziona sempre)
                     HStack(spacing: 10) {
                         Image(systemName: "sun.min.fill")
                             .foregroundStyle(.white.opacity(0.5))
@@ -274,13 +272,10 @@ struct ControlCenterView: View {
 
                     Divider().background(.white.opacity(0.15))
 
-                    // Volume — read-only, mostra solo il valore corrente
-                    // (iOS non permette di settare il volume di sistema via API pubblica)
                     HStack(spacing: 10) {
                         Image(systemName: volume < 0.01 ? "speaker.slash.fill" : volume < 0.4 ? "speaker.fill" : "speaker.wave.2.fill")
                             .foregroundStyle(.white.opacity(0.5))
                             .font(.system(size: 13))
-                        // Barra grafica read-only
                         GeometryReader { g in
                             ZStack(alignment: .leading) {
                                 RoundedRectangle(cornerRadius: 2)
@@ -304,99 +299,9 @@ struct ControlCenterView: View {
                 .background(Color.white.opacity(0.06))
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-                // Sezione Spotify
-                if spotifyOpen {
-                    VStack(spacing: 14) {
-                        // Header
-                        HStack(spacing: 6) {
-                            Image("spotify_icon")
-                                .resizable().scaledToFit()
-                                .frame(width: 16, height: 16)
-                            Text("Spotify")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(.white.opacity(0.6))
-                            Spacer()
-                        }
-
-                        if !trackTitle.isEmpty {
-                            // Artwork + info canzone
-                            HStack(spacing: 12) {
-                                Group {
-                                    if let img = artwork {
-                                        Image(uiImage: img)
-                                            .resizable().scaledToFill()
-                                    } else {
-                                        ZStack {
-                                            Color.green.opacity(0.25)
-                                            Image(systemName: "music.note")
-                                                .foregroundStyle(.green)
-                                        }
-                                    }
-                                }
-                                .frame(width: 52, height: 52)
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(trackTitle)
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundStyle(.white)
-                                        .lineLimit(1)
-                                    Text(trackArtist)
-                                        .font(.system(size: 12))
-                                        .foregroundStyle(.white.opacity(0.55))
-                                        .lineLimit(1)
-                                }
-                                Spacer()
-                            }
-
-                            // Controlli
-                            HStack(spacing: 0) {
-                                Button {
-                                    isLooping.toggle()
-                                    SpotifyService.shared.setRepeat(isLooping)
-                                } label: {
-                                    Image(systemName: isLooping ? "repeat.1" : "repeat")
-                                        .font(.system(size: 15))
-                                        .foregroundStyle(isLooping ? .green : .white.opacity(0.55))
-                                        .frame(maxWidth: .infinity).padding(.vertical, 10)
-                                }.buttonStyle(.plain)
-
-                                Button { SpotifyService.shared.previousTrack() } label: {
-                                    Image(systemName: "backward.fill")
-                                        .font(.system(size: 20)).foregroundStyle(.white)
-                                        .frame(maxWidth: .infinity).padding(.vertical, 10)
-                                }.buttonStyle(.plain)
-
-                                Button {
-                                    SpotifyService.shared.playPause()
-                                    isPlaying.toggle()
-                                } label: {
-                                    Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                                        .font(.system(size: 26)).foregroundStyle(.white)
-                                        .frame(maxWidth: .infinity).padding(.vertical, 6)
-                                }.buttonStyle(.plain)
-
-                                Button { SpotifyService.shared.nextTrack() } label: {
-                                    Image(systemName: "forward.fill")
-                                        .font(.system(size: 20)).foregroundStyle(.white)
-                                        .frame(maxWidth: .infinity).padding(.vertical, 10)
-                                }.buttonStyle(.plain)
-
-                                Color.clear
-                                    .frame(maxWidth: .infinity).padding(.vertical, 10)
-                            }
-                        } else {
-                            Text("Nessuna canzone in riproduzione")
-                                .font(.system(size: 13))
-                                .foregroundStyle(.white.opacity(0.4))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                        }
-                    }
-                    .padding(14)
-                    .background(Color.white.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                if spotifyIsOpen {
+                    SpotifyControlCenterSection(spotifyVM: spotifyVM)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
             }
             .padding(24)
@@ -404,26 +309,16 @@ struct ControlCenterView: View {
         .frame(width: 300)
         .background(.ultraThinMaterial)
         .environment(\.colorScheme, .dark)
-        .animation(.spring(duration: 0.35, bounce: 0.1), value: spotifyOpen)
-        .animation(.spring(duration: 0.3), value: trackTitle)
-        .onReceive(refreshTimer) { _ in refreshNowPlaying() }
+        .animation(.spring(duration: 0.35, bounce: 0.1), value: spotifyIsOpen)
+        .animation(.spring(duration: 0.3), value: spotifyVM.playback.title)
         .onReceive(volTimer) { _ in
             let v = Double(AVAudioSession.sharedInstance().outputVolume)
             if abs(v - volume) > 0.005 { volume = v }
         }
-        .onAppear { refreshNowPlaying() }
-    }
-
-    private func refreshNowPlaying() {
-        let info = MPNowPlayingInfoCenter.default().nowPlayingInfo
-        trackTitle  = info?[MPMediaItemPropertyTitle]  as? String ?? ""
-        trackArtist = info?[MPMediaItemPropertyArtist] as? String ?? ""
-        let rate = info?[MPNowPlayingInfoPropertyPlaybackRate] as? Double ?? 0
-        isPlaying = rate > 0
-        if let art = info?[MPMediaItemPropertyArtwork] as? MPMediaItemArtwork {
-            artwork = art.image(at: CGSize(width: 52, height: 52))
-        } else {
-            artwork = nil
+        .onAppear {
+            if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                brightness = Double(scene.screen.brightness)
+            }
         }
     }
 }
