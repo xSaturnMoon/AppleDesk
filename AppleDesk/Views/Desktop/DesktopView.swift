@@ -200,7 +200,7 @@ class HoverCoordinator: NSObject, @unchecked Sendable {
         let y = MainActor.assumeIsolated { g.location(in: nil).y }
         if y > screenHeight - 50 {
             guard hoverTimer == nil else { return }
-            let cb = onTrigger
+            nonisolated(unsafe) let cb = onTrigger
             hoverTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
                 self?.hoverTimer = nil
                 DispatchQueue.main.async { cb?() }

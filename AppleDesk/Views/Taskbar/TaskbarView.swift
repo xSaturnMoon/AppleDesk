@@ -229,7 +229,7 @@ struct ControlCenterView: View {
     let spotifyOpen: Bool
 
     // Luminosità: leggiamo da UIScreen al momento dell'apertura
-    @State private var brightness: Double = Double(UIScreen.main.brightness)
+    @State private var brightness: Double = 0.5
     // Volume: read-only da AVAudioSession, mostriamo solo il valore reale
     @State private var volume: Double = Double(AVAudioSession.sharedInstance().outputVolume)
 

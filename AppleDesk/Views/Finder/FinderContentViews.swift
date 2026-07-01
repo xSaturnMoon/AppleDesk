@@ -218,21 +218,24 @@ struct FinderColumnsView: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 0) {
-                ForEach(Array(vm.columnPath.enumerated()), id: \.offset) { index, _ in
-                    FinderColumnPane(
-                        vm: vm,
-                        items: vm.columnItems.indices.contains(index) ? vm.columnItems[index] : [],
-                        selectedURL: vm.columnPath.indices.contains(index + 1) ? vm.columnPath[index + 1] : nil
-                    )
+            columnsContent
+                .frame(maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var columnsContent: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(vm.columnPath.enumerated()), id: \.offset) { index, _ in
+                let items: [FinderItem] = vm.columnItems.indices.contains(index) ? vm.columnItems[index] : []
+                let selectedURL: URL? = vm.columnPath.indices.contains(index + 1) ? vm.columnPath[index + 1] : nil
+                FinderColumnPane(vm: vm, items: items, selectedURL: selectedURL)
                     .frame(width: 220, maxHeight: .infinity)
 
-                    if index < vm.columnPath.count - 1 {
-                        Rectangle().fill(.white.opacity(0.08)).frame(width: 1)
-                    }
+                if index < vm.columnPath.count - 1 {
+                    Rectangle().fill(.white.opacity(0.08)).frame(width: 1)
                 }
             }
-            .frame(maxHeight: .infinity)
         }
     }
 }
