@@ -13,6 +13,7 @@ enum GFNPalette {
 struct GFNToolbarButton: View {
     let icon: String
     var label: String? = nil
+    var accent: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -22,17 +23,17 @@ struct GFNToolbarButton: View {
                     .font(.system(size: 13, weight: .semibold))
                 if let label {
                     Text(label)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
                 }
             }
-            .foregroundStyle(GFNPalette.textPrimary)
+            .foregroundStyle(accent ? .white : GFNPalette.textPrimary)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(Color.white.opacity(0.06))
+            .background(accent ? GFNPalette.nvidiaGreen.opacity(0.42) : Color.white.opacity(0.06))
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(GFNPalette.stroke, lineWidth: 0.5)
+                    .stroke(accent ? GFNPalette.nvidiaGreen.opacity(0.7) : GFNPalette.stroke, lineWidth: 0.5)
             )
         }
         .buttonStyle(.plain)

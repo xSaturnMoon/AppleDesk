@@ -44,6 +44,9 @@ struct GFNGameWindowContent: View {
 
             HStack(spacing: 6) {
                 cloudBadge
+                GFNToolbarButton(icon: "person.crop.circle.fill", label: "Accedi", accent: true) {
+                    browserVM.openLogin()
+                }
                 if browserVM.canGoBack {
                     GFNToolbarButton(icon: "chevron.left", action: browserVM.goBack)
                 }

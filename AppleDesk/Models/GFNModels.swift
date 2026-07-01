@@ -32,7 +32,7 @@ enum GFNLinks {
     static let utmSource = "appledesk"
 
     static var hub: URL {
-        URL(string: "\(base)/mall/")!
+        URL(string: "\(base)/")!
     }
 
     static func gamePage(gameId: String, campaign: String) -> URL {

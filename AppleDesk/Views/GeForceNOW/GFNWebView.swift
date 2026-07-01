@@ -36,6 +36,25 @@ struct GFNWebView: UIViewRepresentable {
             decisionHandler(.allow)
         }
 
+        @available(iOS 14.0, *)
+        func webView(_ webView: WKWebView,
+                     decidePolicyFor navigationAction: WKNavigationAction,
+                     preferences: WKWebpagePreferences,
+                     decisionHandler: @escaping @MainActor (WKNavigationActionPolicy, WKWebpagePreferences) -> Void) {
+            preferences.preferredContentMode = .desktop
+            preferences.allowsContentJavaScript = true
+            guard let url = navigationAction.request.url else {
+                decisionHandler(.allow, preferences)
+                return
+            }
+            let scheme = url.scheme?.lowercased() ?? ""
+            if scheme != "http" && scheme != "https" {
+                decisionHandler(.cancel, preferences)
+                return
+            }
+            decisionHandler(.allow, preferences)
+        }
+
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             vm.handleNavigationStarted()
         }

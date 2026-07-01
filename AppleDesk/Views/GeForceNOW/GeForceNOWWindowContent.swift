@@ -62,6 +62,9 @@ struct GeForceNOWWindowContent: View {
                 if browserVM.canGoBack {
                     GFNToolbarButton(icon: "chevron.left", action: browserVM.goBack)
                 }
+                GFNToolbarButton(icon: "person.crop.circle.fill", label: "Accedi", accent: true) {
+                    browserVM.openLogin()
+                }
                 GFNToolbarButton(icon: "arrow.clockwise", action: browserVM.reload)
             }
         }
