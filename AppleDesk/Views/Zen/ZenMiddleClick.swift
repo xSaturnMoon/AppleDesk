@@ -17,6 +17,9 @@ struct MiddleClickOverlay: UIViewRepresentable {
 }
 
 final class MiddleClickView: UIView {
+    /// Pulsante centrale mouse: 1 = primario, 2 = secondario, 3 = centrale (rotellina).
+    private static let middleButtonMask = UIEvent.ButtonMask.button(3)
+
     var onMiddleClick: (() -> Void)?
 
     override init(frame: CGRect) {
@@ -28,9 +31,7 @@ final class MiddleClickView: UIView {
         recognizer.cancelsTouchesInView = false
         recognizer.delaysTouchesBegan = false
         recognizer.delaysTouchesEnded = false
-        if #available(iOS 17.5, *) {
-            recognizer.buttonMaskRequired = .middle
-        }
+        recognizer.buttonMaskRequired = Self.middleButtonMask
         addGestureRecognizer(recognizer)
     }
 
@@ -38,7 +39,7 @@ final class MiddleClickView: UIView {
 
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         guard bounds.contains(point) else { return nil }
-        if #available(iOS 17.5, *), let event, event.buttonMask == .middle {
+        if let event, event.buttonMask == Self.middleButtonMask {
             return self
         }
         return nil
