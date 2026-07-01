@@ -37,15 +37,17 @@ private struct FinderItemContextMenu: ViewModifier {
                     Label("Apri", systemImage: "arrow.right.circle")
                 }
             }
-            Button {
-                vm.beginRename(item)
-            } label: {
-                Label("Rinomina", systemImage: "pencil")
-            }
-            Button(role: .destructive) {
-                vm.requestDelete(item)
-            } label: {
-                Label("Elimina", systemImage: "trash")
+            if !item.isSystemFolder {
+                Button {
+                    vm.beginRename(item)
+                } label: {
+                    Label("Rinomina", systemImage: "pencil")
+                }
+                Button(role: .destructive) {
+                    vm.requestDelete(item)
+                } label: {
+                    Label("Elimina", systemImage: "trash")
+                }
             }
         }
     }

@@ -46,6 +46,11 @@ struct FinderItem: Identifiable, Hashable {
     let size: Int64
     let modificationDate: Date
 
+    var isSystemFolder: Bool {
+        guard isDirectory else { return false }
+        return FinderCategory.all.contains { $0.url.path == url.path }
+    }
+
     var id: String { url.path }
 
     var symbol: String {

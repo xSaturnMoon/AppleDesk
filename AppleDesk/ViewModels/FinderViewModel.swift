@@ -154,6 +154,10 @@ final class FinderViewModel: ObservableObject {
     }
 
     func beginRename(_ item: FinderItem) {
+        if item.isSystemFolder {
+            errorMessage = "Le cartelle di sistema non possono essere rinominate."
+            return
+        }
         renamingItem = item
         renameText = item.name
     }
@@ -170,6 +174,10 @@ final class FinderViewModel: ObservableObject {
     }
 
     func requestDelete(_ item: FinderItem) {
+        if item.isSystemFolder {
+            errorMessage = "Le cartelle di sistema non possono essere eliminate."
+            return
+        }
         itemPendingDelete = item
         showDeleteConfirm = true
     }
