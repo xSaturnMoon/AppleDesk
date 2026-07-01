@@ -11,7 +11,7 @@ struct AppItem: Identifiable, Hashable {
 
     // App pinnate (sempre in taskbar)
     static let defaults: [AppItem] = [
-        AppItem(id: "chrome", name: "Chrome",  icon: "globe",       iconAsset: "chrome_icon", color: .clear),
+        AppItem(id: "zen", name: "Zen", icon: "globe", iconAsset: "zen_icon", color: .clear),
         AppItem(id: "finder", name: "Finder",  icon: "folder.fill", iconAsset: "finder_icon", color: .clear),
     ]
 

@@ -123,11 +123,19 @@ class DesktopViewModel: ObservableObject {
     private func loadState() {
         if let data = UserDefaults.standard.data(forKey: "savedWindows"),
            let saved = try? JSONDecoder().decode([DesktopWindow].self, from: data) {
-            self.openWindows = saved
+            self.openWindows = saved.map { window in
+                var w = window
+                if w.appID == "chrome" { w = DesktopWindow(id: w.id, appID: "zen", title: "Zen", icon: "globe", iconAsset: "zen_icon", position: w.position, size: w.size, isMinimized: w.isMinimized, isMaximized: w.isMaximized) }
+                return w
+            }
         }
         if let data = UserDefaults.standard.data(forKey: "savedAppStates"),
            let saved = try? JSONDecoder().decode([String: DesktopWindow].self, from: data) {
-            self.appStates = saved
+            var migrated = saved
+            if let chrome = migrated.removeValue(forKey: "chrome") {
+                migrated["zen"] = DesktopWindow(appID: "zen", title: "Zen", icon: "globe", iconAsset: "zen_icon", position: chrome.position, size: chrome.size, isMinimized: chrome.isMinimized, isMaximized: chrome.isMaximized)
+            }
+            self.appStates = migrated
         }
         if let activeIDStr = UserDefaults.standard.string(forKey: "activeWindowID"),
            let activeID = UUID(uuidString: activeIDStr) {
@@ -150,13 +158,13 @@ class DesktopViewModel: ObservableObject {
     private func defaultWindowFrame(for appID: String) -> (size: CGSize, position: CGPoint) {
         // Fallback se lo schermo non è ancora noto (primissimo frame)
         guard screenSize.width > 0, screenSize.height > 0 else {
-            let fallback = appID == "finder" ? CGSize(width: 860, height: 540) : CGSize(width: 780, height: 560)
+            let fallback = appID == "finder" ? CGSize(width: 860, height: 540) : (appID == "zen" ? CGSize(width: 900, height: 580) : CGSize(width: 780, height: 560))
             return (fallback, CGPoint(x: fallback.width / 2 + 40, y: fallback.height / 2 + 40))
         }
 
         // Finder un filo più grande delle altre app, ma sempre entro lo schermo disponibile
-        let widthRatio: CGFloat = appID == "finder" ? 0.72 : 0.68
-        let heightRatio: CGFloat = appID == "finder" ? 0.78 : 0.74
+        let widthRatio: CGFloat = appID == "finder" ? 0.72 : (appID == "zen" ? 0.78 : 0.68)
+        let heightRatio: CGFloat = appID == "finder" ? 0.78 : (appID == "zen" ? 0.82 : 0.74)
 
         let availableHeight = screenSize.height - taskbarReservedHeight
         let width = min(screenSize.width * widthRatio, screenSize.width - 80)
