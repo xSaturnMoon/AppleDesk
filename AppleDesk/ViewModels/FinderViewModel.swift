@@ -6,7 +6,11 @@ final class FinderViewModel: ObservableObject {
 
     @Published var currentURL: URL = FinderService.rootURL
     @Published var items: [FinderItem] = []
-    @Published var viewMode: FinderViewMode = .icons
+    @Published var viewMode: FinderViewMode {
+        didSet {
+            UserDefaults.standard.set(viewMode.rawValue, forKey: "finderViewMode")
+        }
+    }
     @Published var selection: Set<String> = []
     @Published var searchText: String = ""
 
@@ -30,6 +34,8 @@ final class FinderViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     init() {
+        let savedMode = UserDefaults.standard.string(forKey: "finderViewMode") ?? FinderViewMode.icons.rawValue
+        self.viewMode = FinderViewMode(rawValue: savedMode) ?? .icons
         FinderService.setupFolderStructureIfNeeded()
         reload()
     }

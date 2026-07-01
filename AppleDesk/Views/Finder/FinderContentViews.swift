@@ -165,7 +165,7 @@ private struct FinderListRow: View {
     var isSelected: Bool { vm.selection.contains(item.id) }
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 0) {
             HStack(spacing: 8) {
                 Image(systemName: item.symbol)
                     .font(.system(size: 14))
