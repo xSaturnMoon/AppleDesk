@@ -12,22 +12,17 @@ enum ZenTheme: String, CaseIterable, Identifiable, Codable {
 
     var accent: Color {
         switch self {
-        case .midnight: return Color(red: 0.96, green: 0.44, blue: 0.38)
-        case .dusk:     return Color(red: 0.72, green: 0.52, blue: 0.98)
-        case .ember:    return Color(red: 1.0, green: 0.55, blue: 0.32)
-        case .ocean:    return Color(red: 0.35, green: 0.68, blue: 0.98)
-        case .forest:   return Color(red: 0.42, green: 0.82, blue: 0.55)
+        case .midnight: return Color(red: 0.95, green: 0.44, blue: 0.40)
+        case .dusk:     return Color(red: 0.78, green: 0.62, blue: 0.98)
+        case .ember:    return Color(red: 0.98, green: 0.58, blue: 0.36)
+        case .ocean:    return Color(red: 0.42, green: 0.68, blue: 0.96)
+        case .forest:   return Color(red: 0.48, green: 0.78, blue: 0.58)
         }
     }
 
+    /// Sfondo uniforme — niente gradienti invasivi
     var gradient: [Color] {
-        switch self {
-        case .midnight: return [Color(red: 0.10, green: 0.08, blue: 0.12), Color(red: 0.06, green: 0.05, blue: 0.08)]
-        case .dusk:     return [Color(red: 0.12, green: 0.09, blue: 0.18), Color(red: 0.07, green: 0.05, blue: 0.12)]
-        case .ember:    return [Color(red: 0.14, green: 0.08, blue: 0.07), Color(red: 0.08, green: 0.05, blue: 0.05)]
-        case .ocean:    return [Color(red: 0.07, green: 0.10, blue: 0.16), Color(red: 0.04, green: 0.06, blue: 0.10)]
-        case .forest:   return [Color(red: 0.07, green: 0.11, blue: 0.08), Color(red: 0.04, green: 0.07, blue: 0.05)]
-        }
+        [ZenPalette.canvas, ZenPalette.canvas]
     }
 }
 

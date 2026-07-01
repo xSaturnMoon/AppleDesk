@@ -16,7 +16,7 @@ struct ZenContentArea: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black.opacity(0.2))
+        .background(ZenPalette.canvasElevated)
     }
 
     private var singlePane: some View {
@@ -34,32 +34,30 @@ struct ZenContentArea: View {
         case .single:
             singlePane
         case .twoHorizontal:
-            HStack(spacing: 1) {
+            HStack(spacing: 0.5) {
                 ForEach(Array(tabs.prefix(2).enumerated()), id: \.element.id) { _, tab in
                     ZenTabPane(vm: vm, tab: tab, isFocused: vm.focusedSplitTabID == tab.id)
                 }
             }
         case .three:
-            HStack(spacing: 1) {
+            HStack(spacing: 0.5) {
                 if let first = tabs.first {
                     ZenTabPane(vm: vm, tab: first, isFocused: vm.focusedSplitTabID == first.id)
-                        .frame(maxWidth: .infinity)
                 }
-                VStack(spacing: 1) {
+                VStack(spacing: 0.5) {
                     ForEach(Array(tabs.dropFirst().prefix(2).enumerated()), id: \.element.id) { _, tab in
                         ZenTabPane(vm: vm, tab: tab, isFocused: vm.focusedSplitTabID == tab.id)
                     }
                 }
-                .frame(maxWidth: .infinity)
             }
         case .four:
-            VStack(spacing: 1) {
-                HStack(spacing: 1) {
+            VStack(spacing: 0.5) {
+                HStack(spacing: 0.5) {
                     ForEach(Array(tabs.prefix(2).enumerated()), id: \.element.id) { _, tab in
                         ZenTabPane(vm: vm, tab: tab, isFocused: vm.focusedSplitTabID == tab.id)
                     }
                 }
-                HStack(spacing: 1) {
+                HStack(spacing: 0.5) {
                     ForEach(Array(tabs.dropFirst(2).prefix(2).enumerated()), id: \.element.id) { _, tab in
                         ZenTabPane(vm: vm, tab: tab, isFocused: vm.focusedSplitTabID == tab.id)
                     }
@@ -72,22 +70,20 @@ struct ZenContentArea: View {
         VStack {
             Button { vm.revealUIInCompact() } label: {
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.7))
-                    .padding(.horizontal, 20)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(ZenPalette.textSecondary)
+                    .padding(.horizontal, 18)
                     .padding(.vertical, 6)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .overlay(Capsule().stroke(.white.opacity(0.15), lineWidth: 0.5))
+                    .zenGlass(radius: 20)
             }
             .buttonStyle(.plain)
-            .padding(.top, 8)
+            .padding(.top, 10)
             Spacer()
         }
     }
 }
 
-// MARK: - Singolo pannello
+// MARK: - Pannello
 struct ZenTabPane: View {
     @ObservedObject var vm: ZenViewModel
     @ObservedObject var tab: ZenTabModel
@@ -98,32 +94,23 @@ struct ZenTabPane: View {
             if tab.loadedURL != nil {
                 ZenWebView(tab: tab, vm: vm)
                 if tab.isLoading {
-                    ProgressView()
-                        .tint(vm.theme.accent)
-                        .padding(14)
-                        .zenGlass(cornerRadius: 14)
+                    ProgressView().tint(ZenPalette.accent)
                 }
             } else {
                 ZenHomePage(
                     vm: vm,
                     tab: tab,
                     onSubmit: { vm.loadURL(tab.urlText, on: tab) },
-                    urlText: Binding(
-                        get: { tab.urlText },
-                        set: { tab.urlText = $0 }
-                    )
+                    urlText: Binding(get: { tab.urlText }, set: { tab.urlText = $0 })
                 )
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay(alignment: .top) {
-            if vm.splitLayout != .single {
-                paneHeader
-            }
-        }
         .overlay {
-            RoundedRectangle(cornerRadius: 0)
-                .stroke(isFocused ? vm.theme.accent.opacity(0.55) : Color.clear, lineWidth: 2)
+            if vm.splitLayout != .single && isFocused {
+                RoundedRectangle(cornerRadius: 0)
+                    .stroke(ZenPalette.accent.opacity(0.35), lineWidth: 1)
+            }
         }
         .contentShape(Rectangle())
         .onTapGesture { vm.focusedSplitTabID = tab.id }
@@ -134,28 +121,8 @@ struct ZenTabPane: View {
                 }
             }
             Button { vm.goHome(on: tab) } label: {
-                Label("Nuova scheda", systemImage: "sparkles")
+                Label("Nuova scheda", systemImage: "plus")
             }
         }
-    }
-
-    private var paneHeader: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "globe")
-                .font(.system(size: 10))
-                .foregroundStyle(vm.theme.accent)
-            Text(tab.title)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.75))
-                .lineLimit(1)
-            Spacer()
-            if tab.isLoading {
-                ProgressView().scaleEffect(0.6).tint(vm.theme.accent)
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(.ultraThinMaterial)
-        .environment(\.colorScheme, .dark)
     }
 }

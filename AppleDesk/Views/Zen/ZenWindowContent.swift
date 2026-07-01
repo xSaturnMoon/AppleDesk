@@ -5,25 +5,17 @@ struct ZenWindowContent: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(colors: vm.theme.gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea()
+            ZenPalette.canvas.ignoresSafeArea()
 
             HStack(spacing: 0) {
-                if !vm.compactMode {
+                if shouldShowSidebar {
                     ZenSidebar(vm: vm)
-                    Rectangle().fill(.white.opacity(0.08)).frame(width: 1)
-                } else if vm.toolbarVisible {
-                    ZenSidebar(vm: vm)
-                        .transition(.move(edge: .leading).combined(with: .opacity))
-                    Rectangle().fill(.white.opacity(0.08)).frame(width: 1)
                 }
 
                 VStack(spacing: 0) {
-                    if vm.toolbarVisible && !vm.compactMode || (vm.compactMode && vm.toolbarVisible) {
+                    if vm.toolbarVisible {
                         ZenToolbar(vm: vm)
-                            .transition(.move(edge: .top).combined(with: .opacity))
                     }
-
                     ZenContentArea(vm: vm)
                 }
             }
@@ -33,9 +25,8 @@ struct ZenWindowContent: View {
                     .zIndex(100)
             }
         }
-        .animation(.spring(duration: 0.35, bounce: 0.1), value: vm.compactMode)
-        .animation(.spring(duration: 0.35, bounce: 0.1), value: vm.toolbarVisible)
-        .animation(.spring(duration: 0.3, bounce: 0.1), value: vm.showGlance)
+        .animation(.spring(duration: 0.3, bounce: 0.04), value: vm.compactMode)
+        .animation(.spring(duration: 0.3, bounce: 0.04), value: vm.toolbarVisible)
         .sheet(isPresented: $vm.showSettings) {
             ZenSettingsPanel(vm: vm)
         }
@@ -44,5 +35,9 @@ struct ZenWindowContent: View {
             Button("Annulla", role: .cancel) { vm.newWorkspaceName = "" }
             Button("Crea") { vm.addWorkspace() }
         }
+    }
+
+    private var shouldShowSidebar: Bool {
+        !vm.compactMode || vm.toolbarVisible
     }
 }
