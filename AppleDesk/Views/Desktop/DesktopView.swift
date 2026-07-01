@@ -134,12 +134,11 @@ struct DesktopView: View {
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                             .padding(.bottom, 16)
                             .zIndex(200)
-                            // Mentre il cursore è sulla taskbar, resta visibile
                             .onHover { hovering in
                                 if hovering {
                                     desktopVM.cancelAutoHide()
                                 } else {
-                                    desktopVM.scheduleAutoHide()
+                                    desktopVM.hideTaskbarIfNeeded()
                                 }
                             }
                     }
@@ -163,10 +162,14 @@ struct DesktopView: View {
             }
             .onChange(of: screenSize) { _, newSize in
                 desktopVM.screenSize = newSize
+                HoverCoordinator.shared.screenHeight = newSize.height
             }
             // Hover in basso: UIHoverGestureRecognizer sulla UIWindow
             .onAppear {
                 installWindowHoverDetector(screenHeight: screenSize.height)
+            }
+            .onChange(of: screenSize.height) { _, h in
+                HoverCoordinator.shared.screenHeight = h
             }
         }
         .ignoresSafeArea()
@@ -189,6 +192,10 @@ struct DesktopView: View {
             hover.name = "AppleDeskHover"
             HoverCoordinator.shared.screenHeight = screenHeight
             HoverCoordinator.shared.onTrigger = { desktopVM.showTaskbar() }
+            HoverCoordinator.shared.onLeaveEdge = {
+                desktopVM.cancelAutoHide()
+                desktopVM.hideTaskbarIfNeeded()
+            }
             window.addGestureRecognizer(hover)
         }
     }
@@ -198,23 +205,44 @@ struct DesktopView: View {
 // @unchecked Sendable perché tutte le sue operazioni avvengono sul main thread
 class HoverCoordinator: NSObject, @unchecked Sendable {
     static let shared = HoverCoordinator()
+
+    /// Pixel dal bordo inferiore: il cursore deve restare qui 0.4s per rivelare la taskbar.
+    private let revealThreshold: CGFloat = 28
+    /// Zona più ampia (taskbar + padding): uscendo da qui la taskbar si nasconde di nuovo.
+    private let keepVisibleThreshold: CGFloat = 100
+    /// Tempo di permanenza sul bordo prima di mostrare la taskbar.
+    private let dwellDuration: TimeInterval = 0.4
+
     var screenHeight: CGFloat = 0
     var onTrigger: (() -> Void)?   // chiamato sempre su DispatchQueue.main
+    var onLeaveEdge: (() -> Void)?
     private var hoverTimer: Timer?
+    private var wasInKeepZone = false
 
     // UIHoverGestureRecognizer chiama SEMPRE sul main thread — usiamo assumeIsolated per location(in:)
     @objc func handleHover(_ g: UIHoverGestureRecognizer) {
         let y = MainActor.assumeIsolated { g.location(in: nil).y }
-        if y > screenHeight - 50 {
+        let inRevealZone = y > screenHeight - revealThreshold
+        let inKeepZone = y > screenHeight - keepVisibleThreshold
+
+        if inRevealZone {
             guard hoverTimer == nil else { return }
             nonisolated(unsafe) let cb = onTrigger
-            hoverTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
+            hoverTimer = Timer.scheduledTimer(withTimeInterval: dwellDuration, repeats: false) { [weak self] _ in
                 self?.hoverTimer = nil
                 DispatchQueue.main.async { cb?() }
             }
         } else {
             hoverTimer?.invalidate()
             hoverTimer = nil
+        }
+
+        if inKeepZone {
+            wasInKeepZone = true
+        } else if wasInKeepZone {
+            wasInKeepZone = false
+            nonisolated(unsafe) let leave = onLeaveEdge
+            DispatchQueue.main.async { leave?() }
         }
     }
 }

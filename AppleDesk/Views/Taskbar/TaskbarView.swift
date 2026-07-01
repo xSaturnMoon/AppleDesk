@@ -118,6 +118,11 @@ struct DockIcon: View {
             }
         }
         .buttonStyle(.plain)
+        .overlay {
+            MiddleClickOverlay {
+                if isOpen { onClose() }
+            }
+        }
         .overlay(alignment: .bottom) {
             if isOpen {
                 Circle()
