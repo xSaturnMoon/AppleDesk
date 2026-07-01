@@ -90,11 +90,21 @@ struct DesktopView: View {
                 )
                 .ignoresSafeArea()
 
-                // Finestre aperte
-                ForEach(desktopVM.openWindows.filter { !$0.isMinimized }) { window in
+                // Finestre aperte (anche minimizzate restano montate per preservare lo stato)
+                ForEach(desktopVM.openWindows) { window in
+                    let isMinimized = window.isMinimized
                     WindowView(window: window, screenSize: screenSize)
                         .environmentObject(desktopVM)
-                        .zIndex(Double(desktopVM.openWindows.firstIndex(where: { $0.id == window.id }) ?? 0) + 10)
+                        .scaleEffect(isMinimized ? 0.82 : 1, anchor: .bottom)
+                        .opacity(isMinimized ? 0 : 1)
+                        .offset(y: isMinimized ? 80 : 0)
+                        .allowsHitTesting(!isMinimized)
+                        .zIndex(
+                            isMinimized
+                                ? 1
+                                : Double(desktopVM.openWindows.firstIndex(where: { $0.id == window.id }) ?? 0) + 10
+                        )
+                        .animation(.spring(response: 0.38, dampingFraction: 0.84), value: isMinimized)
                 }
 
                 // Option key handler

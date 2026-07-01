@@ -40,8 +40,6 @@ final class SpotifyViewModel: ObservableObject {
         prefs.preferredContentMode = .desktop
         prefs.allowsContentJavaScript = true
         config.defaultWebpagePreferences = prefs
-
-        stateHandler.viewModel = self
         config.userContentController.add(stateHandler, name: "spotifyState")
 
         webView = WKWebView(frame: .zero, configuration: config)
@@ -50,6 +48,8 @@ final class SpotifyViewModel: ObservableObject {
         webView.allowsLinkPreview = false
         webView.isOpaque = false
         webView.backgroundColor = UIColor(red: 0.07, green: 0.07, blue: 0.07, alpha: 1)
+
+        stateHandler.viewModel = self
     }
 
     var isSessionActive: Bool {

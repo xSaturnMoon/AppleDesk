@@ -59,7 +59,7 @@ struct WindowView: View {
                 title: window.title, icon: window.icon, iconAsset: window.iconAsset,
                 isActive: isActive, isMaximized: isMaximized,
                 onClose: { beginClose() },
-                onMinimize: { withAnimation(.spring(duration: 0.35, bounce: 0.1)) { desktopVM.minimizeWindow(window.id) } },
+                onMinimize: { desktopVM.minimizeWindow(window.id) },
                 onMaximize: { toggleMaximize() }
             )
             .gesture(

@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import MapKit
 
 nonisolated(unsafe) private var delegateKey: UInt8 = 0
 
@@ -39,10 +40,15 @@ class WeatherService: ObservableObject {
     }
 
     private func reverseGeocode(_ location: CLLocation) async -> String {
-        let geocoder = CLGeocoder()
-        if let placemark = try? await geocoder.reverseGeocodeLocation(location).first {
-            return placemark.locality ?? placemark.administrativeArea ?? "—"
-        }
+        guard let request = MKReverseGeocodingRequest(location: location) else { return "—" }
+        do {
+            let mapItems = try await request.mapItems
+            guard let item = mapItems.first else { return "—" }
+            if let short = item.address?.shortAddress, !short.isEmpty {
+                return short.components(separatedBy: ",").first?.trimmingCharacters(in: .whitespaces) ?? short
+            }
+            if let name = item.name, !name.isEmpty { return name }
+        } catch {}
         return "—"
     }
 

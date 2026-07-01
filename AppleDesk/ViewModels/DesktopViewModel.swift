@@ -214,8 +214,9 @@ class DesktopViewModel: ObservableObject {
         }
 
         if let idx = openWindows.firstIndex(where: { $0.appID == app.id }) {
-            withAnimation(.spring(duration: 0.35, bounce: 0.1)) {
+            withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
                 openWindows[idx].isMinimized = false
+                appStates[app.id] = openWindows[idx]
             }
             bringToFront(openWindows[idx].id)
         } else {
@@ -242,7 +243,10 @@ class DesktopViewModel: ObservableObject {
 
     func minimizeWindow(_ id: UUID) {
         if let idx = openWindows.firstIndex(where: { $0.id == id }) {
-            withAnimation(.spring(duration: 0.35, bounce: 0.1)) { openWindows[idx].isMinimized = true }
+            withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
+                openWindows[idx].isMinimized = true
+                appStates[openWindows[idx].appID] = openWindows[idx]
+            }
             activeWindowID = openWindows.last(where: { !$0.isMinimized })?.id
             syncTaskbarVisibility()
         }
