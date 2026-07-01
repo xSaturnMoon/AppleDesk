@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AuthView: View {
     @EnvironmentObject var authVM: AuthViewModel
+    @EnvironmentObject var desktopVM: DesktopViewModel
     @State private var password = ""
     @State private var setupUsername = ""
     @State private var setupPassword = ""
@@ -17,7 +18,7 @@ struct AuthView: View {
         ZStack {
             DesktopWallpaper()
                 .blur(radius: 28)
-                .overlay(Color.black.opacity(0.12))
+                .overlay(Color.black.opacity(0.18))
 
             VStack(spacing: 0) {
                 Spacer()
@@ -32,10 +33,9 @@ struct AuthView: View {
 
                 Spacer()
 
-                clockPanel
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 48)
-                    .padding(.bottom, 44)
+                bottomBar
+                    .padding(.horizontal, 44)
+                    .padding(.bottom, 40)
             }
         }
         .ignoresSafeArea()
@@ -49,20 +49,42 @@ struct AuthView: View {
         }
     }
 
-    // MARK: - Windows 11 sign-in (solo password)
+    // MARK: - Bottom bar: clock + power
+
+    private var bottomBar: some View {
+        HStack(alignment: .bottom) {
+            clockPanel
+            Spacer()
+            powerButtons
+        }
+        .opacity(appear ? 1 : 0)
+    }
+
+    private var powerButtons: some View {
+        HStack(spacing: 10) {
+            glassIconButton(icon: "arrow.counterclockwise", label: "Riavvia") {
+                desktopVM.restart(authVM: authVM)
+            }
+            glassIconButton(icon: "power", label: "Spegni", tint: .red.opacity(0.85)) {
+                desktopVM.shutdown()
+            }
+        }
+    }
+
+    // MARK: - Sign-in
 
     private var signInContent: some View {
-        VStack(spacing: 20) {
-            userAvatar(size: 96, initial: userInitial, color: authVM.avatarColor)
+        VStack(spacing: 22) {
+            userAvatar(size: 100, initial: userInitial, color: authVM.avatarColor)
 
             Text(authVM.username)
-                .font(.system(size: 22, weight: .regular, design: .rounded))
+                .font(.system(size: 24, weight: .regular, design: .rounded))
                 .foregroundStyle(.white)
 
-            VStack(spacing: 10) {
+            VStack(spacing: 12) {
                 HStack(spacing: 12) {
                     SecureField("Password", text: $password)
-                        .font(.system(size: 15, design: .rounded))
+                        .font(.system(size: 16, design: .rounded))
                         .foregroundStyle(.white)
                         .tint(.white)
                         .focused($passwordFocused)
@@ -70,21 +92,20 @@ struct AuthView: View {
 
                     Button(action: submitSignIn) {
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(.white)
-                            .frame(width: 36, height: 36)
-                            .background(.white.opacity(password.isEmpty ? 0.12 : 0.22))
+                            .frame(width: 40, height: 40)
+                            .background(.ultraThinMaterial)
+                            .environment(\.colorScheme, .dark)
                             .clipShape(Circle())
+                            .overlay(Circle().stroke(.white.opacity(0.25), lineWidth: 0.5))
                     }
                     .buttonStyle(.plain)
                     .disabled(password.isEmpty)
+                    .opacity(password.isEmpty ? 0.5 : 1)
                 }
-                .padding(.horizontal, 4)
-                .padding(.vertical, 10)
-                .frame(width: 280)
-                .overlay(alignment: .bottom) {
-                    Rectangle().fill(.white.opacity(0.35)).frame(height: 1)
-                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
 
                 if let err = authVM.error {
                     Text(err)
@@ -92,22 +113,24 @@ struct AuthView: View {
                         .foregroundStyle(.red.opacity(0.9))
                 }
             }
+            .frame(width: 320)
+            .glassPanel(cornerRadius: 20)
         }
         .opacity(appear ? 1 : 0)
         .offset(y: appear ? 0 : 12)
     }
 
-    // MARK: - Prima configurazione (una tantum)
+    // MARK: - Setup
 
     private var setupContent: some View {
-        VStack(spacing: 22) {
-            userAvatar(size: 80, initial: setupInitial, color: selectedColor)
+        VStack(spacing: 20) {
+            userAvatar(size: 88, initial: setupInitial, color: selectedColor)
 
             Text("Configura AppleDesk")
-                .font(.system(size: 20, weight: .regular, design: .rounded))
-                .foregroundStyle(.white.opacity(0.9))
+                .font(.system(size: 22, weight: .regular, design: .rounded))
+                .foregroundStyle(.white)
 
-            VStack(spacing: 16) {
+            VStack(spacing: 18) {
                 setupField("Nome utente", text: $setupUsername, secure: false)
                 setupField("Password", text: $setupPassword, secure: true)
 
@@ -115,7 +138,7 @@ struct AuthView: View {
                     ForEach(avatarColors, id: \.self) { color in
                         Circle()
                             .fill(color)
-                            .frame(width: 24, height: 24)
+                            .frame(width: 26, height: 26)
                             .overlay(
                                 Circle()
                                     .stroke(.white, lineWidth: selectedColor == color ? 2 : 0)
@@ -124,6 +147,7 @@ struct AuthView: View {
                             .onTapGesture { selectedColor = color }
                     }
                 }
+                .padding(.top, 4)
 
                 if let err = authVM.error {
                     Text(err)
@@ -135,20 +159,27 @@ struct AuthView: View {
                     Text("Continua")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 28)
-                        .padding(.vertical, 10)
-                        .background(.white.opacity(0.16))
-                        .clipShape(Capsule())
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(.ultraThinMaterial)
+                        .environment(\.colorScheme, .dark)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(.white.opacity(0.22), lineWidth: 0.5)
+                        )
                 }
                 .buttonStyle(.plain)
             }
-            .frame(width: 300)
+            .padding(24)
+            .frame(width: 340)
+            .glassPanel(cornerRadius: 24)
         }
         .opacity(appear ? 1 : 0)
         .offset(y: appear ? 0 : 12)
     }
 
-    // MARK: - Clock (bottom-left, Windows 11)
+    // MARK: - Clock
 
     private var clockPanel: some View {
         TimelineView(.periodic(from: .now, by: 1)) { ctx in
@@ -163,20 +194,44 @@ struct AuthView: View {
                     .foregroundStyle(.white.opacity(0.55))
             }
         }
-        .opacity(appear ? 1 : 0)
     }
 
     // MARK: - Helpers
+
+    private func glassIconButton(icon: String, label: String, tint: Color = .white,
+                                 action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .medium))
+                Text(label)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+            }
+            .foregroundStyle(tint)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 11)
+            .background(.ultraThinMaterial)
+            .environment(\.colorScheme, .dark)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(.white.opacity(0.2), lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(.plain)
+    }
 
     private func userAvatar(size: CGFloat, initial: String, color: Color) -> some View {
         ZStack {
             Circle()
                 .fill(color.opacity(0.35))
                 .frame(width: size, height: size)
+                .overlay(Circle().stroke(.white.opacity(0.2), lineWidth: 1))
             Text(initial)
                 .font(.system(size: size * 0.38, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
         }
+        .shadow(color: .black.opacity(0.2), radius: 12, y: 6)
     }
 
     private func setupField(_ placeholder: String, text: Binding<String>, secure: Bool) -> some View {
@@ -194,9 +249,13 @@ struct AuthView: View {
         .tint(.white)
         .multilineTextAlignment(.center)
         .padding(.vertical, 10)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(.white.opacity(0.25)).frame(height: 1)
-        }
+        .padding(.horizontal, 12)
+        .background(.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(.white.opacity(0.12), lineWidth: 0.5)
+        )
     }
 
     private var userInitial: String {
@@ -217,5 +276,28 @@ struct AuthView: View {
 
     private func submitSetup() {
         authVM.register(username: setupUsername, password: setupPassword, color: selectedColor)
+    }
+}
+
+// MARK: - Glass panel modifier
+
+private extension View {
+    func glassPanel(cornerRadius: CGFloat) -> some View {
+        self
+            .background(.ultraThinMaterial)
+            .environment(\.colorScheme, .dark)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [.white.opacity(0.28), .white.opacity(0.08)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.5
+                    )
+            )
+            .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
     }
 }

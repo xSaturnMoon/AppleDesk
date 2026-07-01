@@ -28,18 +28,11 @@ class AuthViewModel: ObservableObject {
         }
     }
 
-    // MARK: Boot → auth or desktop
+    // MARK: Boot → sempre schermata di accesso
     func finishBoot() {
-        let isLoggedIn = UserDefaults.standard.bool(forKey: loggedInKey)
-        if isLoggedIn, hasRegisteredAccount {
-            username = UserDefaults.standard.string(forKey: usernameKey) ?? ""
-            loadAvatarColor()
-            withAnimation { phase = .desktop }
-        } else {
-            UserDefaults.standard.set(false, forKey: loggedInKey)
-            prepareAuthScreen()
-            withAnimation { phase = .auth }
-        }
+        UserDefaults.standard.set(false, forKey: loggedInKey)
+        prepareAuthScreen()
+        withAnimation { phase = .auth }
     }
 
     // MARK: Register (solo prima configurazione)
