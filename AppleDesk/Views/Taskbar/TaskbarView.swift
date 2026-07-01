@@ -138,9 +138,8 @@ struct DockIcon: View {
 // MARK: - Status Pill
 struct StatusPill: View {
     @EnvironmentObject var desktopVM: DesktopViewModel
+    @EnvironmentObject var batteryService: BatteryService
     @State private var now = Date()
-    @State private var batteryLevel: Float = 0.8
-    @State private var charging = false
     @State private var showControlCenter = false
     let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -151,7 +150,7 @@ struct StatusPill: View {
     var body: some View {
         Button(action: { showControlCenter.toggle() }) {
             HStack(spacing: 12) {
-                BatteryView(level: batteryLevel, charging: charging)
+                BatteryView(level: batteryService.level, charging: batteryService.isCharging)
                 Rectangle().fill(.white.opacity(0.2)).frame(width: 1, height: 18)
                 VStack(alignment: .trailing, spacing: 1) {
                     Text(now, format: .dateTime.hour().minute())
@@ -180,13 +179,7 @@ struct StatusPill: View {
             if open { desktopVM.showTaskbar() }
             else if !desktopVM.showStartMenu { desktopVM.hideTaskbarIfNeeded() }
         }
-        .onReceive(clock) { d in
-            now = d
-            let lvl = UIDevice.current.batteryLevel
-            batteryLevel = lvl < 0 ? 0.8 : lvl
-            charging = UIDevice.current.batteryState == .charging || UIDevice.current.batteryState == .full
-        }
-        .onAppear { UIDevice.current.isBatteryMonitoringEnabled = true }
+        .onReceive(clock) { d in now = d }
     }
 }
 
@@ -212,7 +205,6 @@ struct BatteryView: View {
                     .fill(barColor)
                     .frame(width: max(1, CGFloat(level) * 18), height: 7)
                     .padding(.leading, 2)
-                    .animation(.spring(duration: 0.4), value: level)
             }
             .overlay(alignment: .trailing) {
                 RoundedRectangle(cornerRadius: 1)

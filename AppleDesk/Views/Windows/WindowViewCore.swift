@@ -32,6 +32,7 @@ struct WindowView: View {
     @State private var dragOrigin: CGPoint = .zero
     @State private var isDragging = false
     @State private var appear = false
+    @State private var isClosing = false
     @State private var preMaxSize: CGSize = .zero
     @State private var preMaxPosition: CGPoint = .zero
 
@@ -57,7 +58,7 @@ struct WindowView: View {
             WindowTitleBar(
                 title: window.title, icon: window.icon, iconAsset: window.iconAsset,
                 isActive: isActive, isMaximized: isMaximized,
-                onClose: { desktopVM.closeWindow(window.id) },
+                onClose: { beginClose() },
                 onMinimize: { withAnimation(.spring(duration: 0.35, bounce: 0.1)) { desktopVM.minimizeWindow(window.id) } },
                 onMaximize: { toggleMaximize() }
             )
@@ -205,8 +206,8 @@ struct WindowView: View {
         .animation(.spring(duration: 0.45, bounce: 0.1), value: size)
         .position(x: position.x, y: position.y)
         .onTapGesture { desktopVM.bringToFront(window.id) }
-        .opacity(appear ? 1 : 0)
-        .scaleEffect(appear ? 1 : 0.88)
+        .opacity((appear && !isClosing) ? 1 : 0)
+        .scaleEffect((appear && !isClosing) ? (isDragging ? 1.005 : 1) : 0.92)
         .onAppear { withAnimation(.spring(duration: 0.4, bounce: 0.15)) { appear = true } }
         .onChange(of: window.isMaximized) { _, newValue in
             guard isMaximized != newValue else { return }
@@ -224,6 +225,18 @@ struct WindowView: View {
                     isMaximized = false
                 }
             }
+        }
+    }
+
+    private func beginClose() {
+        guard !isClosing else { return }
+        withAnimation(.spring(response: 0.22, dampingFraction: 0.88)) {
+            isClosing = true
+        }
+        let id = window.id
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(190))
+            desktopVM.closeWindow(id)
         }
     }
 

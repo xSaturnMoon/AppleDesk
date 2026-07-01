@@ -35,11 +35,12 @@ enum SnapZone: Equatable {
 
 @MainActor
 class DesktopViewModel: ObservableObject {
-    @Published var openWindows: [DesktopWindow] = [] { didSet { saveState() } }
-    @Published var appStates: [String: DesktopWindow] = [:] { didSet { saveState() } }
+    @Published var openWindows: [DesktopWindow] = [] { didSet { scheduleSaveState() } }
+    @Published var appStates: [String: DesktopWindow] = [:] { didSet { scheduleSaveState() } }
     // taskbarApps è dinamico: pinned sempre presenti, non-pinned aggiunti all'apertura
     @Published var taskbarApps: [AppItem] = AppItem.defaults
-    @Published var activeWindowID: UUID? = nil { didSet { saveState() } }
+    @Published var activeWindowID: UUID? = nil { didSet { scheduleSaveState() } }
+    private var saveStateTask: Task<Void, Never>?
     @Published var showStartMenu: Bool = false
     @Published var taskbarVisible: Bool = true
     @Published var taskbarPinned: Bool = false
@@ -63,7 +64,11 @@ class DesktopViewModel: ObservableObject {
         withAnimation(.spring(duration: 0.4, bounce: 0.1)) {
             showStartMenu.toggle()
             taskbarPinned = showStartMenu
-            if showStartMenu { taskbarVisible = true }
+            if showStartMenu {
+                taskbarVisible = true
+            } else {
+                hideTaskbarIfNeeded()
+            }
         }
     }
 
@@ -107,6 +112,15 @@ class DesktopViewModel: ObservableObject {
     }
 
     init() { loadState() }
+
+    private func scheduleSaveState() {
+        saveStateTask?.cancel()
+        saveStateTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(80))
+            guard !Task.isCancelled else { return }
+            saveState()
+        }
+    }
 
     private func saveState() {
         if let data = try? JSONEncoder().encode(openWindows) {
@@ -229,8 +243,8 @@ class DesktopViewModel: ObservableObject {
             }
         }
         snappedWindowZones.removeValue(forKey: id)
-        withAnimation(.spring(duration: 0.35, bounce: 0.05)) { openWindows.removeAll { $0.id == id } }
-        activeWindowID = openWindows.last?.id
+        openWindows.removeAll { $0.id == id }
+        activeWindowID = openWindows.last(where: { !$0.isMinimized })?.id ?? openWindows.last?.id
         syncTaskbarVisibility()
     }
 

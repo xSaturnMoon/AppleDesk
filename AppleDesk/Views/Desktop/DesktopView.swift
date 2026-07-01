@@ -42,9 +42,13 @@ class MenuKeyView: UIView {
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
         var handled = false
         for press in presses {
-            if let key = press.key,
-               key.keyCode == .keyboardLeftAlt || key.keyCode == .keyboardRightAlt {
-                DispatchQueue.main.async { self.onOptionKey?() }
+            guard let key = press.key else { continue }
+            let isMenuKey = key.keyCode == .keyboardLeftAlt
+                || key.keyCode == .keyboardRightAlt
+                || key.keyCode == .keyboardLeftGUI
+                || key.keyCode == .keyboardRightGUI
+            if isMenuKey {
+                onOptionKey?()
                 handled = true
             }
         }
@@ -68,6 +72,7 @@ struct DesktopView: View {
     @EnvironmentObject var desktopVM: DesktopViewModel
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var weatherService: WeatherService
+    @EnvironmentObject var batteryService: BatteryService
 
     var body: some View {
         GeometryReader { geo in
@@ -131,6 +136,7 @@ struct DesktopView: View {
                             .environmentObject(desktopVM)
                             .environmentObject(authVM)
                             .environmentObject(weatherService)
+                            .environmentObject(batteryService)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                             .padding(.bottom, 16)
                             .zIndex(200)
@@ -297,7 +303,6 @@ struct StartMenuView: View {
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.12), lineWidth: 0.8))
             .padding(.horizontal, 24)
-            .onAppear { searchFocused = true }
 
             if !results.isEmpty {
                 VStack(spacing: 2) {
@@ -380,5 +385,11 @@ struct StartMenuView: View {
         .environment(\.colorScheme, .dark)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .shadow(color: .black.opacity(0.3), radius: 40, y: 20)
+        .focusable()
+        .onKeyPress(.escape) {
+            guard desktopVM.showStartMenu else { return .ignored }
+            desktopVM.toggleStartMenu()
+            return .handled
+        }
     }
 }
