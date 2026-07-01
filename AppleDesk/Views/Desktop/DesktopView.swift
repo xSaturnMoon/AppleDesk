@@ -157,6 +157,13 @@ struct DesktopView: View {
                     }
                 }
             }
+            // Tiene aggiornata la dimensione schermo nel ViewModel (per centrare le nuove finestre)
+            .onAppear {
+                desktopVM.screenSize = screenSize
+            }
+            .onChange(of: screenSize) { _, newSize in
+                desktopVM.screenSize = newSize
+            }
             // Hover in basso: UIHoverGestureRecognizer sulla UIWindow
             .onAppear {
                 installWindowHoverDetector(screenHeight: screenSize.height)

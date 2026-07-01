@@ -48,6 +48,14 @@ class DesktopViewModel: ObservableObject {
     // Tiene traccia delle finestre snappate e la loro zona
     @Published var snappedWindowZones: [UUID: SnapZone] = [:]
 
+    // Dimensione corrente dello schermo, aggiornata dalla GeometryReader in DesktopView.
+    // Serve per aprire le finestre centrate e dimensionate in modo proporzionale.
+    @Published var screenSize: CGSize = .zero
+
+    // Spazio verticale riservato in basso per la taskbar (pillola + padding),
+    // usato per centrare le finestre tra il bordo alto e la taskbar.
+    private let taskbarReservedHeight: CGFloat = 90
+
     // Tutte le app cercabili nel menu Start
     let allApps: [AppItem] = AppItem.allApps
 
@@ -137,6 +145,29 @@ class DesktopViewModel: ObservableObject {
         }
     }
 
+    /// Calcola dimensione e posizione (centro) di default per una nuova finestra,
+    /// centrata tra i due bordi laterali e tra il bordo alto e la taskbar.
+    private func defaultWindowFrame(for appID: String) -> (size: CGSize, position: CGPoint) {
+        // Fallback se lo schermo non è ancora noto (primissimo frame)
+        guard screenSize.width > 0, screenSize.height > 0 else {
+            let fallback = appID == "finder" ? CGSize(width: 860, height: 540) : CGSize(width: 780, height: 560)
+            return (fallback, CGPoint(x: fallback.width / 2 + 40, y: fallback.height / 2 + 40))
+        }
+
+        // Finder un filo più grande delle altre app, ma sempre entro lo schermo disponibile
+        let widthRatio: CGFloat = appID == "finder" ? 0.72 : 0.68
+        let heightRatio: CGFloat = appID == "finder" ? 0.78 : 0.74
+
+        let availableHeight = screenSize.height - taskbarReservedHeight
+        let width = min(screenSize.width * widthRatio, screenSize.width - 80)
+        let height = min(availableHeight * heightRatio, availableHeight - 40)
+        let size = CGSize(width: max(width, 420), height: max(height, 320))
+
+        // Centro esatto tra i due bordi laterali, e tra il bordo alto e la taskbar
+        let center = CGPoint(x: screenSize.width / 2, y: availableHeight / 2)
+        return (size, center)
+    }
+
     func openApp(_ app: AppItem) {
         // Aggiunge alla taskbar se non pinnata e non già presente
         if !taskbarApps.contains(where: { $0.id == app.id }) {
@@ -151,11 +182,13 @@ class DesktopViewModel: ObservableObject {
             }
             bringToFront(openWindows[idx].id)
         } else {
-            var win = appStates[app.id] ?? DesktopWindow(
-                appID: app.id, title: app.name, icon: app.icon, iconAsset: app.iconAsset,
-                position: CGPoint(x: 520, y: 380),
-                size: app.id == "finder" ? CGSize(width: 860, height: 540) : CGSize(width: 680, height: 460)
-            )
+            var win = appStates[app.id] ?? {
+                let (size, position) = defaultWindowFrame(for: app.id)
+                return DesktopWindow(
+                    appID: app.id, title: app.name, icon: app.icon, iconAsset: app.iconAsset,
+                    position: position, size: size
+                )
+            }()
             win.id = UUID()
             win.isMinimized = false
             openWindows.append(win)
