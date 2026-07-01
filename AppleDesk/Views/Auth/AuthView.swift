@@ -3,6 +3,7 @@ import SwiftUI
 struct AuthView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var desktopVM: DesktopViewModel
+    @EnvironmentObject var settingsVM: SettingsViewModel
     @State private var password = ""
     @State private var setupUsername = ""
     @State private var setupPassword = ""
@@ -17,7 +18,7 @@ struct AuthView: View {
     var body: some View {
         ZStack {
             DesktopWallpaper()
-                .blur(radius: 28)
+                .blur(radius: settingsVM.blurIntensity)
                 .overlay(Color.black.opacity(0.18))
 
             VStack(spacing: 0) {

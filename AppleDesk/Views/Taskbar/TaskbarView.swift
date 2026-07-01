@@ -7,6 +7,7 @@ struct TaskbarView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var weatherService: WeatherService
     @EnvironmentObject var spotifyVM: SpotifyViewModel
+    @EnvironmentObject var settingsVM: SettingsViewModel
 
     private var spotifyIsOpen: Bool {
         desktopVM.openWindows.contains { $0.appID == "spotify" }
@@ -14,7 +15,9 @@ struct TaskbarView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
-            WeatherPill()
+            if settingsVM.showWeatherInTaskbar {
+                WeatherPill()
+            }
             if spotifyIsOpen, spotifyVM.playback.hasTrack {
                 SpotifyNowPlayingPill()
             }
@@ -53,6 +56,7 @@ struct WeatherPill: View {
 // MARK: - Dock Pill
 struct DockPill: View {
     @EnvironmentObject var desktopVM: DesktopViewModel
+    @EnvironmentObject var settingsVM: SettingsViewModel
 
     var body: some View {
         HStack(spacing: 12) {
@@ -77,6 +81,7 @@ struct DockPill: View {
             ForEach(desktopVM.taskbarApps) { app in
                 DockIcon(
                     app: app,
+                    iconScale: settingsVM.dockIconScale,
                     isOpen: desktopVM.openWindows.contains { $0.appID == app.id },
                     action: {
                         withAnimation(.spring(duration: 0.3, bounce: 0.25)) {
@@ -103,6 +108,7 @@ struct DockPill: View {
 
 struct DockIcon: View {
     let app: AppItem
+    var iconScale: Double = 1.0
     let isOpen: Bool
     let action: () -> Void
     let onClose: () -> Void
@@ -116,11 +122,11 @@ struct DockIcon: View {
                 if let asset = app.iconAsset {
                     Image(asset)
                         .resizable().scaledToFit()
-                        .frame(width: 29, height: 29)
+                        .frame(width: 29 * iconScale, height: 29 * iconScale)
                 } else {
                     Image(systemName: app.icon)
                         .resizable().scaledToFit()
-                        .frame(width: 22, height: 22)
+                        .frame(width: 22 * iconScale, height: 22 * iconScale)
                         .foregroundStyle(app.color == .clear ? .white : app.color)
                 }
             }
@@ -148,6 +154,7 @@ struct StatusPill: View {
     @EnvironmentObject var desktopVM: DesktopViewModel
     @EnvironmentObject var batteryService: BatteryService
     @EnvironmentObject var spotifyVM: SpotifyViewModel
+    @EnvironmentObject var settingsVM: SettingsViewModel
     @State private var now = Date()
     @State private var showControlCenter = false
     let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -159,7 +166,11 @@ struct StatusPill: View {
     var body: some View {
         Button(action: { showControlCenter.toggle() }) {
             HStack(spacing: 12) {
-                BatteryView(level: batteryService.level, charging: batteryService.isCharging)
+                BatteryView(
+                    level: batteryService.level,
+                    charging: batteryService.isCharging,
+                    showPercent: settingsVM.showBatteryPercent
+                )
                 Rectangle().fill(.white.opacity(0.2)).frame(width: 1, height: 18)
                 VStack(alignment: .trailing, spacing: 1) {
                     Text(now, format: .dateTime.hour().minute())
@@ -197,6 +208,7 @@ struct StatusPill: View {
 struct BatteryView: View {
     let level: Float
     let charging: Bool
+    var showPercent: Bool = false
 
     var barColor: Color {
         if charging { return .green }
@@ -226,6 +238,12 @@ struct BatteryView: View {
                 Image(systemName: "bolt.fill")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(.green)
+            }
+            if showPercent {
+                Text("\(Int(level * 100))")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.85))
+                    .monospacedDigit()
             }
         }
     }

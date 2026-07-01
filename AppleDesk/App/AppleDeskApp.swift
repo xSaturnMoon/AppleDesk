@@ -7,6 +7,7 @@ struct AppleDeskApp: App {
     @StateObject private var weatherService = WeatherService()
     @StateObject private var batteryService = BatteryService()
     @StateObject private var spotifyVM = SpotifyViewModel()
+    @StateObject private var settingsVM = SettingsViewModel()
 
     init() {
         // Crea (se serve) la cartella "AppleDesk" con le sottocartelle categoria,
@@ -22,6 +23,7 @@ struct AppleDeskApp: App {
                 .environmentObject(weatherService)
                 .environmentObject(batteryService)
                 .environmentObject(spotifyVM)
+                .environmentObject(settingsVM)
                 .preferredColorScheme(.dark)
         }
     }

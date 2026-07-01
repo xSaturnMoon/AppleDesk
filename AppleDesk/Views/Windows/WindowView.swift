@@ -88,6 +88,7 @@ struct WindowContent: View {
             case "zen":     ZenWindowContent()
             case "spotify": SpotifyWindowContent()
             case "finder":  FinderWindowContent()
+            case "settings": SettingsWindowContent()
             default:
                 switch app?.name {
                 case "Terminale": TerminalWindowContent()

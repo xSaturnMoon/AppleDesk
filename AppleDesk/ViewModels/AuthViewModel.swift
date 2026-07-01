@@ -74,6 +74,21 @@ class AuthViewModel: ObservableObject {
         withAnimation { phase = .auth }
     }
 
+    func updateAvatarColor(_ color: Color) {
+        saveColor(color)
+        avatarColor = color
+    }
+
+    @discardableResult
+    func changePassword(new: String, confirm: String) -> Bool {
+        guard hasRegisteredAccount else { error = "Nessun account"; return false }
+        guard new.count >= 4 else { error = "Minimo 4 caratteri"; return false }
+        guard new == confirm else { error = "Le password non coincidono"; return false }
+        UserDefaults.standard.set(new, forKey: passwordKey)
+        error = nil
+        return true
+    }
+
     // MARK: Color persistence
     private func saveColor(_ color: Color) {
         if let data = try? NSKeyedArchiver.archivedData(withRootObject: UIColor(color), requiringSecureCoding: false) {

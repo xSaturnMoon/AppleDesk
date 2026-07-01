@@ -8,11 +8,27 @@ nonisolated(unsafe) private var delegateKey: UInt8 = 0
 class WeatherService: ObservableObject {
     @Published var weather = WeatherData()
 
+    private var useGPS = true
+    private var manualCity = WeatherCity.presets[0]
+
     init() {
-        Task { await load() }
+        Task { await refresh() }
     }
 
-    private func load() async {
+    func configure(useGPS: Bool, city: WeatherCity) {
+        self.useGPS = useGPS
+        self.manualCity = city
+    }
+
+    func refresh() async {
+        if useGPS {
+            await loadFromGPS()
+        } else {
+            await fetchWeather(lat: manualCity.lat, lon: manualCity.lon, city: manualCity.name)
+        }
+    }
+
+    private func loadFromGPS() async {
         do {
             let location = try await requestLocation()
             let city = await Self.reverseGeocodeCity(location)

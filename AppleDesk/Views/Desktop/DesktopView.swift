@@ -74,6 +74,7 @@ struct DesktopView: View {
     @EnvironmentObject var weatherService: WeatherService
     @EnvironmentObject var batteryService: BatteryService
     @EnvironmentObject var spotifyVM: SpotifyViewModel
+    @EnvironmentObject var settingsVM: SettingsViewModel
 
     var body: some View {
         GeometryReader { geo in
@@ -140,6 +141,7 @@ struct DesktopView: View {
                             .environmentObject(weatherService)
                             .environmentObject(batteryService)
                             .environmentObject(spotifyVM)
+                            .environmentObject(settingsVM)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                             .padding(.bottom, 16)
                             .zIndex(200)
@@ -168,6 +170,7 @@ struct DesktopView: View {
             // Tiene aggiornata la dimensione schermo nel ViewModel (per centrare le nuove finestre)
             .onAppear {
                 desktopVM.screenSize = screenSize
+                settingsVM.bind(weather: weatherService, battery: batteryService, desktop: desktopVM)
             }
             .onChange(of: screenSize) { _, newSize in
                 desktopVM.screenSize = newSize

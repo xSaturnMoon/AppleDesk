@@ -44,6 +44,7 @@ class DesktopViewModel: ObservableObject {
     @Published var showStartMenu: Bool = false
     @Published var taskbarVisible: Bool = true
     @Published var taskbarPinned: Bool = false
+    @Published var taskbarAlwaysVisible: Bool = false
     @Published var snapPreview: SnapZone? = nil
     private var autoHideTimer: Timer?
     // Tiene traccia delle finestre snappate e la loro zona
@@ -90,6 +91,10 @@ class DesktopViewModel: ObservableObject {
     }
 
     func hideTaskbarIfNeeded() {
+        guard !taskbarAlwaysVisible else {
+            showTaskbar()
+            return
+        }
         guard !taskbarPinned else { return }
         let shouldHide = openWindows.contains { w in
             guard !w.isMinimized else { return false }
@@ -176,6 +181,7 @@ class DesktopViewModel: ObservableObject {
             case "finder": CGSize(width: 860, height: 540)
             case "zen": CGSize(width: 900, height: 580)
             case "spotify": CGSize(width: 920, height: 620)
+            case "settings": CGSize(width: 980, height: 640)
             default: CGSize(width: 780, height: 560)
             }
             return (fallback, CGPoint(x: fallback.width / 2 + 40, y: fallback.height / 2 + 40))
@@ -186,12 +192,14 @@ class DesktopViewModel: ObservableObject {
         case "finder": 0.72
         case "zen": 0.78
         case "spotify": 0.76
+        case "settings": 0.82
         default: 0.68
         }
         let heightRatio: CGFloat = switch appID {
         case "finder": 0.78
         case "zen": 0.82
         case "spotify": 0.84
+        case "settings": 0.86
         default: 0.74
         }
 
@@ -292,7 +300,10 @@ class DesktopViewModel: ObservableObject {
     }
 
     func syncTaskbarVisibility() {
-        guard !taskbarPinned else { taskbarVisible = true; return }
+        if taskbarAlwaysVisible || taskbarPinned {
+            taskbarVisible = true
+            return
+        }
         let shouldHide = openWindows.contains { w in
             guard !w.isMinimized else { return false }
             if w.isMaximized { return true }
@@ -314,4 +325,17 @@ class DesktopViewModel: ObservableObject {
     }
 
     func shutdown() { exit(0) }
+
+    func resetWindowLayout() {
+        withAnimation(.spring(duration: 0.35, bounce: 0.05)) {
+            openWindows.removeAll()
+            snappedWindowZones.removeAll()
+            appStates.removeAll()
+            activeWindowID = nil
+        }
+        UserDefaults.standard.removeObject(forKey: "savedWindows")
+        UserDefaults.standard.removeObject(forKey: "savedAppStates")
+        UserDefaults.standard.removeObject(forKey: "activeWindowID")
+        syncTaskbarVisibility()
+    }
 }
