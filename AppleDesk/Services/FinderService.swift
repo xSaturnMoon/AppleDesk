@@ -63,6 +63,9 @@ enum FinderService {
 
     @discardableResult
     static func rename(_ item: FinderItem, to newName: String) throws -> URL {
+        if item.isSystemFolder {
+            throw FinderError.systemFolderProtected
+        }
         let clean = newName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { throw FinderError.invalidName }
         let folder = item.url.deletingLastPathComponent()
@@ -74,6 +77,9 @@ enum FinderService {
     }
 
     static func delete(_ item: FinderItem) throws {
+        if item.isSystemFolder {
+            throw FinderError.systemFolderProtected
+        }
         let fm = FileManager.default
         do {
             try fm.trashItem(at: item.url, resultingItemURL: nil)
@@ -116,11 +122,13 @@ enum FinderService {
 enum FinderError: LocalizedError {
     case invalidName
     case invalidDestination
+    case systemFolderProtected
 
     var errorDescription: String? {
         switch self {
         case .invalidName:        return "Nome non valido."
         case .invalidDestination: return "Non puoi spostare un elemento dentro se stesso."
+        case .systemFolderProtected: return "Operazione non consentita su questa cartella di sistema."
         }
     }
 }

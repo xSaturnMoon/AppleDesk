@@ -48,7 +48,13 @@ struct FinderItem: Identifiable, Hashable {
 
     var isSystemFolder: Bool {
         guard isDirectory else { return false }
-        return FinderCategory.all.contains { $0.url.path == url.path }
+        let systemNames = FinderCategory.all.compactMap { $0.folderName }
+        guard systemNames.contains(name) else { return false }
+        
+        let rootPath = FinderService.rootURL.standardizedFileURL.resolvingSymlinksInPath().path
+        let parentPath = url.deletingLastPathComponent().standardizedFileURL.resolvingSymlinksInPath().path
+        
+        return rootPath == parentPath
     }
 
     var id: String { url.path }
