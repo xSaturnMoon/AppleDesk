@@ -266,7 +266,9 @@ struct ControlCenterView: View {
                         Slider(value: $brightness, in: 0...1)
                             .tint(.white)
                             .onChange(of: brightness) { _, v in
-                                UIScreen.main.brightness = v
+                                if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                                    scene.screen.brightness = v
+                                }
                             }
                         Image(systemName: "sun.max.fill")
                             .foregroundStyle(.white.opacity(0.9))
