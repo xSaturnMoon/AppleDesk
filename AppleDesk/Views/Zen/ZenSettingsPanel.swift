@@ -179,6 +179,6 @@ struct ZenSettingsPanel: View {
         Toggle(title, isOn: isOn)
             .font(.system(size: 13))
             .foregroundStyle(ZenPalette.textPrimary)
-            .tint(ZenPalette.accent)
+            .tint(vm.accent)
     }
 }
